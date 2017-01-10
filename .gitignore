@@ -25,3 +25,4 @@ vignettes/*.pdf
 .Rproj.user
 lectures.Rproj
 rmarkdown_files
+.DS_Store
