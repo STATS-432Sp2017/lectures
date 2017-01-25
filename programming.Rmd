@@ -2,9 +2,7 @@
 title: "Programming"
 author: "DJM"
 date: "January 17, 2017"
-output: 
-  slidy_presentation:
-    font_adjustment: -10
+output: pdf_document
 ---
 
 
@@ -574,17 +572,14 @@ options are only discussed on the help pages for the class-specific functions
 * For instance, suppose we want to estimate a kernel regression
 (as in chapter 4) to the same data, using the same variables.  
 
-```{r test, cache=TRUE, echo=FALSE, results='hide'}
+```{r test, cache=TRUE, echo=TRUE, results='hide'}
+#
 library(np)
 mob.npbw <- npregbw(formula=formula(mob.lm2), data=mob, tol=1e-2, ftol=1e-2)
 mob.np <- npreg(mob.npbw, data=mob)
 ```
 
 
-```{r, eval=FALSE, cache=TRUE, autodep=TRUE}
-library(np)
-mob.np <- npreg(formula=formula(mob.lm2), data=mob, tol=1e-2, ftol=1e-2)
-```
 (See chapter 4 on the `tol` and `ftol` settings.)
 
 
@@ -605,20 +600,20 @@ mob.np <- npreg(formula=formula(mob.lm2), data=mob, tol=1e-2, ftol=1e-2)
 ## We can look at a summary:
 
 
-```{r}
+```{r, cahce=TRUE, autodep=TRUE}
 summary(mob.np)
 ```
 
 ## We can look at fitted values and residuals:
 
-```{r}
+```{r, autodep=TRUE, cache=TRUE}
 head(fitted(mob.np))
 tail(residuals(mob.np))
 ```
 
 ## We can make predictions:
 
-```{r}
+```{r,autodep=TRUE,cache=TRUE}
 predict(mob.np, newdata=data.frame(Population=1.5e6, Seg_racial=0, 
         Commute=0.5, Income=3e4, Gini=median(mob$Gini)))
 ```
