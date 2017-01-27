@@ -4,60 +4,257 @@ author: "DJM"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   slidy_presentation:
-    height: 1080
-    width: 1920
-    css: "http://mypage.iu.edu/~dajmcdon/teaching/DJMslidy.css"
+    font_adjustment: -1
 ---
 
-## Simplifying variance
+## The normal linear model
 
-$$
-\newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
-\newcommand{\Var}[1]{\mathbb{V}\left[ #1 \right]}
-\newcommand{\given}{\ \vert\ }
-$$
-
-
-> Why does $\Expect{(Y-m)^2} = \Expect{Y-m}^2 + \Expect{Y-m}$?
-(note the typo in eq. 1.3)
-
-Recall the usual variance formula:
+Assume that 
 \[
-\Var{X} = \Expect{X^2} - \Expect{X}^2
+y_i = x_i^\top \beta + \epsilon_i.
 \]
 
-This formula is very useful 
+1. What are all these things?
+2. What is the mean of $y_i$?
+3. What is the distribution of $\epsilon_i$?
+4. What is the notation $X$ or $Y$?
 
-[It gets used again for, e.g., (1.13)--(1.14) and (1.29)--(1.30).]
+## Drawing a sample
 
-## Causation, independence and regression
-
-For any two variables $Y$ and $X$, we can write
 \[
-Y \given X = \mu(X) + \eta(X)
+y_i = x_i^\top \beta + \epsilon_i.
 \]
-such that $\Expect{\eta(X)}=0$.
 
-* Suppose, $\mu(X)=\mu_0$ (constant in $X$), are $Y$ and $X$ independent?
-* Suppose $Y$ and $X$ are independent, is $\mu(X)=\mu_0$?
+Write code which draws a sample form the population given by this model.
+
+```{r sampling, eval=FALSE}
+p = 3
+n = 100
+sigma = 2
+epsilon = rnorm(n,sd=sigma) # this is random
+X = matrix(runif(n*p), n, p) # treat this as fixed, but I need numbers
+beta = rpois(p+1,5) # also fixed, but I again need numbers
+Y = cbind(1,X) %*% beta + epsilon # epsilon is random, so this is
+## Equiv: Y = beta[1] + X %*% beta[-1] + epsilon
+```
+
+## How do we estimate beta?
+
+1. Guess.
+2. Ordinary least squares (OLS).
+3. Maximum likelihood.
+4. Do something more creative.
+
+## Method 1: Guess
+
+This method isn't very good, as I'm sure you can imagine.
+
+## Method 2. OLS
+
+Suppose I want to find an estimator $\widehat\beta$ which makes small errors on my data.
+
+I measure errors with the difference between predictions $X\widehat\beta$ and the responses $Y$.
+
+I don't care if the differences are positive or negative, so I try to measure the total error with
+\[
+\sum_{i=1}^n \left\lvert y_i - x_i^\top \widehat\beta \right\rvert.
+\]
+
+This is fine, but hard to minimize (what is the derivative of $|\cdot|$?)
+
+So I use 
+\[
+\sum_{i=1}^n ( y_i - x_i^\top \widehat\beta )^2.
+\]
+
+
+## Method 2. OLS solution
+
+We write this as
+\[
+\widehat\beta = \arg\min_\beta \sum_{i=1}^n ( y_i - x_i^\top \beta )^2.
+\]
+
+"Find the $\beta$ which minimizes the sum of squared errors."
+
+Note that this is the same as 
+\[
+\widehat\beta = \arg\min_\beta \frac{1}{n}\sum_{i=1}^n ( y_i - x_i^\top \beta )^2.
+\]
+
+"Find the beta which minimizes the mean squared error."
+
+## Method 2. Ok, do it
+
+We differentiate and set to zero
+\[
+\begin{aligned}
+& \frac{\partial}{\partial \beta} \frac{1}{n}\sum_{i=1}^n ( y_i - x_i^\top \beta )^2\\
+&= \frac{2}{n}\sum_{i=1}^n x_i (y_i - x_i^\top\beta)\\
+&= \frac{2}{n}\sum_{i=1}^n - x_i x_i^\top \beta + x_i y_i\\
+0 &\equiv \sum_{i=1}^n - x_i x_i^\top \beta + x_i y_i\\
+&\Rightarrow \sum_{i=1}^n x_i x_i^\top \beta = \sum_{i=1}^n x_i y_i\\
+&\Rightarrow \beta = \left(\sum_{i=1}^n x_i x_i^\top\right)^{-1}\sum_{i=1}^n x_i y_i
+\end{aligned}
+\]
+
+## In matrix notation...
+
+...this is 
+
+\[
+\hat\beta = (X^\top X)^{-1} X^\top Y.
+\]
+
+The $\beta$ which "minimizes the sum of squared errors"
+
+
+AKA, the SSE.
+
+## Method 3: maximum likelihood
+
+Method 2 didn't use anything about the distribution of $\epsilon$.
+
+But if we know that $\epsilon$ has a normal distribution, we can write down the joint distribution
+of $Y=(y_1,\ldots,y_n)$:
+
+\[
+\begin{aligned}
+f_Y(y ; \beta) &= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
+  &= \prod_{i=1}^n \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(-\frac{1}{2\sigma^2} (y_i-x_i^\top \beta)^2\right)\\
+  &= \left( \frac{1}{2\pi\sigma^2}\right)^{n/2} \exp\left(-\frac{1}{2\sigma^2}\sum_{i=1}^n (y_i-x_i^\top \beta)^2\right)
+\end{aligned}
+\]
+
+
+In M463, we think of $f_Y$ as a function of $y$ with $\beta$ fixed:
+
+1. If we integrate over $y$ from $-\infty$ to $\infty$, it's $1$.
+2. If we want the probability of $(a,b)$, we integrate from $a$ to $b$.
+3. etc.
+
+## Turn it around...
+
+...instead, think of it as a function of $\beta$.
+
+We call this "the likelihood" of beta: $\mathcal{L}(\beta)$.
+
+Given some data, we can evaluate the likelihood for any value of $\beta$ (assuming $\sigma$ is known).
+
+It won't integrate to $1$ over $\beta$.
+
+But it is "convex", meaning we can maximize it (the second derivative wrt $\beta$ is everywhere negative).
+
+## So let's maximize
+
+The derivative of this thing is kind of ugly.
+
+But if we're trying to maximize over $\beta$, we can take an increasing transformation without changing anything.
+
+I choose $\log_e$.
+
+\[
+\begin{aligned}
+\mathcal{L}(\beta) &= \left( \frac{1}{2\pi\sigma^2}\right)^{n/2} \exp\left(-\frac{1}{2\sigma^2}\sum_{i=1}^n (y_i-x_i^\top \beta)^2\right)\\
+\ell(\beta) &=-\frac{n}{2}\log (2\pi\sigma^2) -\frac{1}{2\sigma^2} \sum_{i=1}^n (y_i-x_i^\top \beta)^2
+\end{aligned}
+\]
+
+But we can ignore constants, so this gives
+
+\[
+\widehat\beta = \arg\max_\beta -\sum_{i=1}^n (y_i-x_i^\top \beta)^2
+\]
+
+The same as before!
+
+## The here and now
+
+In S432, we focus on OLS.
+
+In S420, you look at maximum likelihood (for this and many other distributions).
+
+Here, the method gives the same estimator.
+
+We need to be able to evaluate how good this estimator is however.
+
+## Mean squared error (MSE)
+
+Let's look at the population version, and let's forget about the linear model.
+
+
+Suppose we think that there is __some__ function which relates $y$ and $x$.
+
+Let's call this function $f$ for the moment.
+
+How do we estimate $f$?
+
+What is $f$?
+
+## Minimizing MSE
+
+Let's try to minimize the __expected__ sum of squared errors (MSE)
+
+\[
+\begin{aligned}
+\mathbb{E}\left[(Y-f(X))^2\right] &= \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
+  &= \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
+  &= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right] + \mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
+  &= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right]\right] + \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
+\end{aligned}
+\]
+
+The first part doesn't depend on $f$, it's constant, and we toss it.
+
+To minimize the rest, take derivatives and set to 0.
+
+\[
+\begin{aligned}
+0 &=\frac{\partial}{\partial f} \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
+  &=-\mathbb{E}\left[\mathbb{E}\left[ 2(Y - f(X) \ \vert\  X\right]\right]\\
+&\Rightarrow 2\mathbb{E}\left[f(X) \ \vert\  X\right] = 2\mathbb{E}\left[Y \ \vert\  X\right]\\
+&\Rightarrow f(X) = \mathbb{E}\left[Y \ \vert\  X\right]
+\end{aligned}
+\]
+
+## The regression function
+
+We call this solution:
+
+\[
+\mu(X) = \mathbb{E}\left[Y \ \vert\  X\right]
+\]
+
+the regression function.
+
+If we __assume__ that $\mu(x) = \mathbb{E}\left[Y \ \vert\  X=x\right] = x^\top \beta$, then we get back exactly OLS.
+
+But why should we assume $\mu(x) = x^\top \beta$?
 
 ## The regression function
 
 
-> What is the notation $\mu(x)$?
+In mathematics: $\mu(x) = \mathbb{E}\left[Y \ \vert\  X=x\right]$.
 
-* In mathematics: $\mu(x) = \Expect{Y \given X=x}$.
-
-* In words: Regression is really about estimating the mean. 
+In words: Regression is really about estimating the mean. 
   1. If $Y\sim \textrm{N}(\mu, 1)$, our best guess for a __new__ $Y$ is $\mu$
   2. For regression, we let the mean $(\mu)$ __depend__ on $X$.
   3. Think of $Y\sim \textrm{N}(\mu(X), 1)$, then conditional on $X=x$, our best guess for a __new__ $Y$ is $\mu(x)$ [whatever this function $\mu$ is]
 
-## MSE of the estimated regression function
+
+## Causality
+
+For any two variables $Y$ and $X$, we can __always__ write
+\[
+Y \ \vert\  X = \mu(X) + \eta(X)
+\]
+such that $\mathbb{E}\left[\eta(X)\right]=0$.
+
+* Suppose, $\mu(X)=\mu_0$ (constant in $X$), are $Y$ and $X$ independent?
+* Suppose $Y$ and $X$ are independent, is $\mu(X)=\mu_0$?
 
 
-> Explain the proof of the bias variance decomposition in (1.22)--(1.27).
-
+## Previews of future chapters
 
 ## Linear smoothers
 
@@ -83,8 +280,6 @@ such that $\Expect{\eta(X)}=0$.
 
 ## Kernels
 
-
-> What are "kernels"?
 
 (Again, more info in Ch. 4)
 
@@ -115,19 +310,3 @@ such that $\Expect{\eta(X)}=0$.
 * You can interpret kNN as a particular kind of kernel
   - The range is determined by $k$
   - The center is determined by $X_i$
-  
-## In-sample MSE for linear smoothers
-
-
-Start from:
-\[
-\begin{align}
-e &= y-wy\\
-\Expect{\frac{1}{n}\lVert e\rVert^2} &= \Var{e} + \Expect{e}^2
-\end{align}
-\]
-
-## Other questions
-
-__What didn't I answer?__
-
