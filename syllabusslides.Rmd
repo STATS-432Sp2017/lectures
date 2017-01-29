@@ -1,13 +1,14 @@
 ---
 title: "Syllabus slides"
 author: "DJM"
-date: January 10, 2016
-output: 
+date: "January 10, 2016"
+output:
+  pdf_document: default
   slidy_presentation:
+    css: http://mypage.iu.edu/~dajmcdon/teaching/DJMslidy.css
+    font_adjustment: -1
     height: 1080
     width: 1920
-    font_adjustment: -1
-    css: "http://mypage.iu.edu/~dajmcdon/teaching/DJMslidy.css"
 ---
 
 

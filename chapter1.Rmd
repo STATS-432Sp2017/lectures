@@ -1,8 +1,9 @@
 ---
 title: "Chapter 1"
 author: "DJM"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: 
+date: 31 January 2017
+output:
+  pdf_document: default
   slidy_presentation:
     font_adjustment: -1
 ---

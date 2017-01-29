@@ -2,7 +2,10 @@
 title: "Programming"
 author: "DJM"
 date: "January 17, 2017"
-output: pdf_document
+output: 
+  pdf_document: default
+  slidy_presentation:
+    font_adjustment: -1
 ---
 
 

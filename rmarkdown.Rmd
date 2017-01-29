@@ -2,7 +2,10 @@
 title: "Using R Markdown for Class Reports"
 author: "DJM"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: pdf_document
+output: 
+  pdf_document: default
+  slidy_presentation:
+    font_adjustment: -1
 ---
 
 ## Mark Up, Markdown
