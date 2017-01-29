@@ -1,0 +1,161 @@
+---
+title: "Chapter 2"
+author: "DJM"
+date: "January 29, 2017"
+output:
+  pdf_document: default
+  slidy_presentation:
+    font_adjustment: -1
+---
+
+\newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
+\newcommand{\Var}[1]{\mathbb{V}\left[ #1 \right]}
+\newcommand{\Cov}[2]{\mathrm{Cov}\left[#1,\ #2\right]}
+\newcommand{\given}{\ \vert\ }
+
+
+## What is this chapter about?
+
+
+> Problems with regression, and in particular, linear regression
+
+A quick overview:
+
+1. The truth is almost never linear.
+2. Collinearity __can__ cause difficulties for numerics and interpretation.
+3. The estimator depends strongly on the marginal distribution of $X$.
+4. Leaving out important variables is bad.
+5. Noisy measurements of variables can be bad, but it may not matter.
+
+## Asymptotic notation
+
+* The Taylor series expansion of the mean function $\mu(x)$ at some point $u$
+
+\[
+\mu(x) = \mu(u) + (x-u)^{\top} \frac{\partial \mu(x)}{\partial x}\vert_{x=u} + O(\lVert x-u\rVert^2)
+\]
+* The notation $f(x) = O(g(x))$ means that for any $x$ there exists a constant $C$ such that $f(x)/g(x) < C$.
+
+* More intuitively, this notation means that the remainder (all the higher order terms) are about the size of the distance between $x$ and $u$ or smaller.
+
+* So as long as we are looking at points $u$ near by $x$, a linear approximation to $\mu(x)=\Expect{Y\given X=x}$ is reasonably accurate.
+
+## What is bias?
+
+* We need to be more specific about what we mean when we say __bias__.
+
+* Bias is neither good nor bad in and of itself.
+
+* A very simple example: let $Z_1,\ldots,Z_n \sim N(\mu, 1)$.
+  - We don't know $\mu$, so we try to use the data (the $Z_i$'s) to estimate it.
+  - I propose 3 estimators: 
+      1. $\hat{\mu}_1 = 12$, 
+      2. $\hat{\mu}_2=Z_6$, 
+      3. $\hat{\mu}_3=\overline{Z}$.
+  - The __bias__ (by definition) of my estimator is $\Expect{\hat{\mu}}-\mu$.
+  - Calculate the bias and variance of each estimator.
+  
+## Regression in general
+
+* If I want to predict $Y$ from $X$, it is almost always the case that
+
+\[
+\mu(x) = \Expect{Y\given X=x} \neq x^{\top}\beta
+\]
+
+* There are always those errors $O(\lVert x-u\rVert)^2$, so the __bias__ is not zero.
+
+* We can include as many predictors as we like, but this doesn't change the fact that the world is __non-linear__.
+
+## Covariance between the prediction error and the predictors
+
+* In theory, we have (if we know things about the state of nature)
+
+\[
+\beta^* = \arg\min_\beta \Expect{\lVert Y-X\beta\rVert^2} = \Cov{X}{X}^{-1}\Cov{X}{Y}
+\]
+
+* Define $v^{-1}=\Cov{X}{X}^{-1}$.
+
+* Using this optimal value $\beta^*$, what is $\Cov{Y-X\beta^*}{X}$?
+
+\[
+\begin{aligned}
+\Cov{Y-X\beta^*}{X} &= \Cov{Y}{X}-\Cov{X\beta^*}{X} & \textrm{(Cov is linear)}\\
+&=\Cov{Y}{X} - \Cov{X (v^{-1}\Cov{X}{Y})}{X} & \textrm{(substitute the def. of $\beta^*$)}\\
+&=\Cov{Y}{X} - \Cov{X}{X}v^{-1}\Cov{X}{Y} & \textrm{(Cov is linear in the first arg)}\\
+&=\Cov{Y}{X} - \Cov{X}{Y}=0.
+\end{aligned}
+\]
+
+
+## Bias and Collinearity
+
+* Adding or dropping variables may impact the bias of a model
+  - Suppose $\mu(x)=\beta_0+\beta_1 x_1$. It __is__ linear. What is our estimator of $\beta_0$?
+  - If we instead estimate the model $y_i = \beta_0$, our estimator of $\beta_0$ will be biased. How biased?
+  - But now suppose that $x_1= 12$ always. Then we don't need to include $x_1$ in the model. Why not?
+  - Form the matrix $[1 x_1]$. Are the columns collinear? What does this actually mean?
+  
+## When two variables are collinear, a few things happen.
+
+  1. We cannot __numerically__ calculate $(\mathbf{X}^\top\mathbf{X})^{-1}$. It is rank deficient.
+  2. We cannot __intellectually__ separate the contributions of the two variables.
+  3. We can (and should) drop one of them. This will not change the bias of our estimator, but it will alter our interpretations.
+  4. Collinearity appears most frequently with many categorical variables.
+  5. In these cases, software __automatically__ drops one of the levels resulting in the baseline case being in the intercept. Alternately, we could drop the intercept!
+  6. High-dimensional problems (where we have more predictors than data points) also lead to rank deficiencies.
+  6. There are methods (regularizing) which attempt to handle this issue (both the numerics and the interpretability). We may have time to cover them slightly.
+  
+## White noise
+
+__White noise__ is a stronger assumption than __Gaussian__.
+
+Consider a random vector $\epsilon$.
+
+1. $\epsilon\sim\textrm{N}(0,\Sigma)$.
+2. $\epsilon_i \sim\textrm{N}(0,\sigma^2(x_i))$.
+3. $\epsilon\sim\textrm{N}(0,\sigma^2 I)$.
+
+The third is white noise. The $\epsilon$ are normal, their variance is constant for all $i$ and independent of $x_i$, and they are independent.
+
+## Asymptotic efficiency
+
+> This and MLE are covered in 420.
+
+There are many properties one can ask of estimators $\hat{\theta}$ of parameters $\theta$
+
+1. Unbiased: $\Expect{\hat{\theta}}-\theta=0$
+2. Consistent: $\hat{\theta}\xrightarrow{n\rightarrow\infty} \theta$
+3. Efficient: $\Var{\hat{\theta}}$ is the smallest of all unbiased estimators
+3. Asymptotically efficient: Maybe not efficient for every $n$, but in the limit, the variance is the smallest of all unbiased estimators.
+4. Minimax: over all possible estimators in some class, this one has the smallest MSE for the worst problem.
+5. $\ldots$
+
+## Problems with R-squared
+
+\[
+R^2 = 1-\frac{SSE}{\sum_{i=1}^n (Y_i-\overline{Y})^2} = 1-\frac{MSE}{\frac{1}{n}\sum_{i=1}^n (Y_i-\overline{Y})^2} = 1-\frac{SSE}{SST}
+\]
+  
+* This gets spit out by software
+* $X$ and $Y$ are both normal with (empirical) correlation $r$, then $R^2=r^2$
+* In this nice case, it measures how tightly grouped the data is about the regression line
+* Data that is tightly grouped about the regression line can be predicted accurately by the regression line.
+* Unfortunately, the implication does not go both ways.
+* High $R^2$ can be achieved in many ways, same with low $R^2$
+* You should just ignore it completely (and the adjusted version), and encourage your friends to do the same
+
+##High R-squared with non-linear relationship
+
+```{r nonlinear-R2,fig.align='center',fig.height=6}
+genY <- function(X, sig) Y = sqrt(X)+sig*rnorm(length(X))
+sig=0.05; n=100
+X1 = runif(n,0,1); Y1 = genY(X1,sig)
+X2 = runif(n,1,2); Y2 = genY(X2,sig)
+X3 = runif(n,10,11); Y3 = genY(X3,sig)
+plot(c(X1,X2,X3),c(Y1,Y2,Y3),pch=19,col=rep(1:3,each=n))
+abline(lm(Y1~X1), col=1); abline(lm(Y2~X2), col=2); abline(lm(Y3~X3), col=3)
+curve(sqrt(x),.001,10,col=4,lwd=2, add=TRUE)
+round(c(summary(lm(Y1~X1))$r.sq, summary(lm(Y2~X2))$r.sq, summary(lm(Y3~X3))$r.sq), 3)
+```
