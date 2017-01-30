@@ -6,6 +6,7 @@
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
   <meta name="author" content="DJM" />
+  <meta name="date" content="2017-01-31" />
   <meta name="font-size-adjustment" content="-1" />
   <title>Chapter 1</title>
   <style type="text/css">code{white-space: pre;}</style>
@@ -55,7 +56,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
   <p class="author">
 DJM
   </p>
-  <p class="date">29 January, 2017</p>
+  <p class="date">31 January 2017</p>
 </div>
 <div id="the-normal-linear-model" class="slide section level2">
 <h2>The normal linear model</h2>
@@ -206,7 +207,6 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 <p><span class="math display">\[
 \begin{aligned}
 \mathbb{E}\left[(Y-f(X))^2\right] &amp;= \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
-  &amp;= \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
   &amp;= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right] + \mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
   &amp;= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right]\right] + \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
 \end{aligned}
@@ -235,7 +235,14 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 <div id="the-regression-function-1" class="slide section level2">
 <h2>The regression function</h2>
 <p>In mathematics: <span class="math inline">\(\mu(x) = \mathbb{E}\left[Y \ \vert\  X=x\right]\)</span>.</p>
-<p>In words: Regression is really about estimating the mean. 1. If <span class="math inline">\(Y\sim \textrm{N}(\mu, 1)\)</span>, our best guess for a <strong>new</strong> <span class="math inline">\(Y\)</span> is <span class="math inline">\(\mu\)</span> 2. For regression, we let the mean <span class="math inline">\((\mu)\)</span> <strong>depend</strong> on <span class="math inline">\(X\)</span>. 3. Think of <span class="math inline">\(Y\sim \textrm{N}(\mu(X), 1)\)</span>, then conditional on <span class="math inline">\(X=x\)</span>, our best guess for a <strong>new</strong> <span class="math inline">\(Y\)</span> is <span class="math inline">\(\mu(x)\)</span> [whatever this function <span class="math inline">\(\mu\)</span> is]</p>
+<p>In words: Regression is really about estimating the mean.</p>
+<ol style="list-style-type: decimal">
+<li>If <span class="math inline">\(Y\sim \textrm{N}(\mu, 1)\)</span>, our best guess for a <strong>new</strong> <span class="math inline">\(Y\)</span> is <span class="math inline">\(\mu\)</span>.<br />
+</li>
+<li>For regression, we let the mean <span class="math inline">\((\mu)\)</span> <strong>depend</strong> on <span class="math inline">\(X\)</span>.<br />
+</li>
+<li>Think of <span class="math inline">\(Y\sim \textrm{N}(\mu(X), 1)\)</span>, then conditional on <span class="math inline">\(X=x\)</span>, our best guess for a <strong>new</strong> <span class="math inline">\(Y\)</span> is <span class="math inline">\(\mu(x)\)</span> [whatever this function <span class="math inline">\(\mu\)</span> is]</li>
+</ol>
 </div>
 <div id="causality" class="slide section level2">
 <h2>Causality</h2>
@@ -257,19 +264,17 @@ Y \ \vert\  X = \mu(X) + \eta(X)
 </blockquote>
 <ol style="list-style-type: decimal">
 <li>Suppose I observe <span class="math inline">\(Y_1,\ldots,Y_n\)</span>.</li>
-<li>A linear smoother is any <strong>prediction function</strong> that’s linear in <span class="math inline">\(\mathbf{Y}\)</span>.</li>
-</ol>
+<li>A linear smoother is any <strong>prediction function</strong> that’s linear in <span class="math inline">\(\mathbf{Y}\)</span>.
 <ul>
 <li>Linear functions of <span class="math inline">\(\mathbf{Y}\)</span> are simply premultiplications by a matrix, i.e. <span class="math inline">\(\hat{\mathbf{Y}} = \mathbf{WY}\)</span> for any matrix <span class="math inline">\(\mathbf{W}\)</span>.</li>
-</ul>
-<ol start="3" style="list-style-type: decimal">
-<li>Examples:</li>
-</ol>
+</ul></li>
+<li>Examples:
 <ul>
 <li><span class="math inline">\(\overline{Y} = \frac{1}{n}\sum Y_i = \frac{1}{n}\begin{bmatrix} 1 &amp; 1 &amp; \cdots &amp; 1 \end{bmatrix} \mathbf{Y}\)</span></li>
 <li>Given <span class="math inline">\(X\)</span>, <span class="math inline">\(\hat{\mathbf{Y}} = \mathbf{X(X^\top X)}^{-1}\mathbf{X^\top Y}\)</span></li>
 <li>You will see many other smoothers in this class</li>
-</ul>
+</ul></li>
+</ol>
 </div>
 <div id="knn-as-a-linear-smoother" class="slide section level2">
 <h2>kNN as a linear smoother</h2>
