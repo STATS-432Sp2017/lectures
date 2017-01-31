@@ -59,7 +59,7 @@ DJM
   <p class="date">31 January 2017</p>
 </div>
 <div id="the-normal-linear-model" class="slide section level2">
-<h2>The normal linear model</h2>
+<h1>The normal linear model</h1>
 <p>Assume that <span class="math display">\[
 y_i = x_i^\top \beta + \epsilon_i.
 \]</span></p>
@@ -71,7 +71,7 @@ y_i = x_i^\top \beta + \epsilon_i.
 </ol>
 </div>
 <div id="drawing-a-sample" class="slide section level2">
-<h2>Drawing a sample</h2>
+<h1>Drawing a sample</h1>
 <p><span class="math display">\[
 y_i = x_i^\top \beta + \epsilon_i.
 \]</span></p>
@@ -86,7 +86,7 @@ Y =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</sp
 ## Equiv: Y = beta[1] + X %*% beta[-1] + epsilon</code></pre></div>
 </div>
 <div id="how-do-we-estimate-beta" class="slide section level2">
-<h2>How do we estimate beta?</h2>
+<h1>How do we estimate beta?</h1>
 <ol style="list-style-type: decimal">
 <li>Guess.</li>
 <li>Ordinary least squares (OLS).</li>
@@ -95,11 +95,11 @@ Y =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</sp
 </ol>
 </div>
 <div id="method-1-guess" class="slide section level2">
-<h2>Method 1: Guess</h2>
+<h1>Method 1: Guess</h1>
 <p>This method isn’t very good, as I’m sure you can imagine.</p>
 </div>
 <div id="method-2.-ols" class="slide section level2">
-<h2>Method 2. OLS</h2>
+<h1>Method 2. OLS</h1>
 <p>Suppose I want to find an estimator <span class="math inline">\(\widehat\beta\)</span> which makes small errors on my data.</p>
 <p>I measure errors with the difference between predictions <span class="math inline">\(X\widehat\beta\)</span> and the responses <span class="math inline">\(Y\)</span>.</p>
 <p>I don’t care if the differences are positive or negative, so I try to measure the total error with <span class="math display">\[
@@ -111,7 +111,7 @@ Y =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</sp
 \]</span></p>
 </div>
 <div id="method-2.-ols-solution" class="slide section level2">
-<h2>Method 2. OLS solution</h2>
+<h1>Method 2. OLS solution</h1>
 <p>We write this as <span class="math display">\[
 \widehat\beta = \arg\min_\beta \sum_{i=1}^n ( y_i - x_i^\top \beta )^2.
 \]</span></p>
@@ -122,7 +122,7 @@ Y =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</sp
 <p>“Find the beta which minimizes the mean squared error.”</p>
 </div>
 <div id="method-2.-ok-do-it" class="slide section level2">
-<h2>Method 2. Ok, do it</h2>
+<h1>Method 2. Ok, do it</h1>
 <p>We differentiate and set to zero <span class="math display">\[
 \begin{aligned}
 &amp; \frac{\partial}{\partial \beta} \frac{1}{n}\sum_{i=1}^n ( y_i - x_i^\top \beta )^2\\
@@ -135,7 +135,7 @@ Y =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</sp
 \]</span></p>
 </div>
 <div id="in-matrix-notation" class="slide section level2">
-<h2>In matrix notation…</h2>
+<h1>In matrix notation…</h1>
 <p>…this is</p>
 <p><span class="math display">\[
 \hat\beta = (X^\top X)^{-1} X^\top Y.
@@ -144,7 +144,7 @@ Y =<span class="st"> </span><span class="kw">cbind</span>(<span class="dv">1</sp
 <p>AKA, the SSE.</p>
 </div>
 <div id="method-3-maximum-likelihood" class="slide section level2">
-<h2>Method 3: maximum likelihood</h2>
+<h1>Method 3: maximum likelihood</h1>
 <p>Method 2 didn’t use anything about the distribution of <span class="math inline">\(\epsilon\)</span>.</p>
 <p>But if we know that <span class="math inline">\(\epsilon\)</span> has a normal distribution, we can write down the joint distribution of <span class="math inline">\(Y=(y_1,\ldots,y_n)\)</span>:</p>
 <p><span class="math display">\[
@@ -162,7 +162,7 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 </ol>
 </div>
 <div id="turn-it-around" class="slide section level2">
-<h2>Turn it around…</h2>
+<h1>Turn it around…</h1>
 <p>…instead, think of it as a function of <span class="math inline">\(\beta\)</span>.</p>
 <p>We call this “the likelihood” of beta: <span class="math inline">\(\mathcal{L}(\beta)\)</span>.</p>
 <p>Given some data, we can evaluate the likelihood for any value of <span class="math inline">\(\beta\)</span> (assuming <span class="math inline">\(\sigma\)</span> is known).</p>
@@ -170,7 +170,7 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 <p>But it is “convex”, meaning we can maximize it (the second derivative wrt <span class="math inline">\(\beta\)</span> is everywhere negative).</p>
 </div>
 <div id="so-lets-maximize" class="slide section level2">
-<h2>So let’s maximize</h2>
+<h1>So let’s maximize</h1>
 <p>The derivative of this thing is kind of ugly.</p>
 <p>But if we’re trying to maximize over <span class="math inline">\(\beta\)</span>, we can take an increasing transformation without changing anything.</p>
 <p>I choose <span class="math inline">\(\log_e\)</span>.</p>
@@ -187,14 +187,14 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 <p>The same as before!</p>
 </div>
 <div id="the-here-and-now" class="slide section level2">
-<h2>The here and now</h2>
+<h1>The here and now</h1>
 <p>In S432, we focus on OLS.</p>
 <p>In S420, you look at maximum likelihood (for this and many other distributions).</p>
 <p>Here, the method gives the same estimator.</p>
 <p>We need to be able to evaluate how good this estimator is however.</p>
 </div>
 <div id="mean-squared-error-mse" class="slide section level2">
-<h2>Mean squared error (MSE)</h2>
+<h1>Mean squared error (MSE)</h1>
 <p>Let’s look at the population version, and let’s forget about the linear model.</p>
 <p>Suppose we think that there is <strong>some</strong> function which relates <span class="math inline">\(y\)</span> and <span class="math inline">\(x\)</span>.</p>
 <p>Let’s call this function <span class="math inline">\(f\)</span> for the moment.</p>
@@ -202,13 +202,13 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 <p>What is <span class="math inline">\(f\)</span>?</p>
 </div>
 <div id="minimizing-mse" class="slide section level2">
-<h2>Minimizing MSE</h2>
+<h1>Minimizing MSE</h1>
 <p>Let’s try to minimize the <strong>expected</strong> sum of squared errors (MSE)</p>
 <p><span class="math display">\[
 \begin{aligned}
 \mathbb{E}\left[(Y-f(X))^2\right] &amp;= \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
-  &amp;= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right] + \mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
-  &amp;= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right]\right] + \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
+  &amp;= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right] + \mathbb{E}\left[(Y-f(X)) \ \vert\  X\right]^2\right]\\
+  &amp;= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right]\right] + \mathbb{E}\left[\mathbb{E}\left[(Y-f(X)) \ \vert\  X\right]^2\right]\\
 \end{aligned}
 \]</span></p>
 <p>The first part doesn’t depend on <span class="math inline">\(f\)</span>, it’s constant, and we toss it.</p>
@@ -223,7 +223,7 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 \]</span></p>
 </div>
 <div id="the-regression-function" class="slide section level2">
-<h2>The regression function</h2>
+<h1>The regression function</h1>
 <p>We call this solution:</p>
 <p><span class="math display">\[
 \mu(X) = \mathbb{E}\left[Y \ \vert\  X\right]
@@ -233,7 +233,7 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 <p>But why should we assume <span class="math inline">\(\mu(x) = x^\top \beta\)</span>?</p>
 </div>
 <div id="the-regression-function-1" class="slide section level2">
-<h2>The regression function</h2>
+<h1>The regression function</h1>
 <p>In mathematics: <span class="math inline">\(\mu(x) = \mathbb{E}\left[Y \ \vert\  X=x\right]\)</span>.</p>
 <p>In words: Regression is really about estimating the mean.</p>
 <ol style="list-style-type: decimal">
@@ -245,7 +245,7 @@ f_Y(y ; \beta) &amp;= \prod_{i=1}^n f_{y_i ; \beta}(y_i)\\
 </ol>
 </div>
 <div id="causality" class="slide section level2">
-<h2>Causality</h2>
+<h1>Causality</h1>
 <p>For any two variables <span class="math inline">\(Y\)</span> and <span class="math inline">\(X\)</span>, we can <strong>always</strong> write <span class="math display">\[
 Y \ \vert\  X = \mu(X) + \eta(X)
 \]</span> such that <span class="math inline">\(\mathbb{E}\left[\eta(X)\right]=0\)</span>.</p>
@@ -255,10 +255,10 @@ Y \ \vert\  X = \mu(X) + \eta(X)
 </ul>
 </div>
 <div id="previews-of-future-chapters" class="slide section level2">
-<h2>Previews of future chapters</h2>
+<h1>Previews of future chapters</h1>
 </div>
 <div id="linear-smoothers" class="slide section level2">
-<h2>Linear smoothers</h2>
+<h1>Linear smoothers</h1>
 <blockquote>
 <p>What is a linear smoother?</p>
 </blockquote>
@@ -271,13 +271,13 @@ Y \ \vert\  X = \mu(X) + \eta(X)
 <li>Examples:
 <ul>
 <li><span class="math inline">\(\overline{Y} = \frac{1}{n}\sum Y_i = \frac{1}{n}\begin{bmatrix} 1 &amp; 1 &amp; \cdots &amp; 1 \end{bmatrix} \mathbf{Y}\)</span></li>
-<li>Given <span class="math inline">\(X\)</span>, <span class="math inline">\(\hat{\mathbf{Y}} = \mathbf{X(X^\top X)}^{-1}\mathbf{X^\top Y}\)</span></li>
+<li>Given <span class="math inline">\(\mathbf{X}\)</span>, <span class="math inline">\(\hat{\mathbf{Y}} = \mathbf{X(X^\top X)}^{-1}\mathbf{X^\top Y}\)</span></li>
 <li>You will see many other smoothers in this class</li>
 </ul></li>
 </ol>
 </div>
 <div id="knn-as-a-linear-smoother" class="slide section level2">
-<h2>kNN as a linear smoother</h2>
+<h1>kNN as a linear smoother</h1>
 <p>(We will see <strong>smoothers</strong> in more detail in Ch. 4)</p>
 <ol style="list-style-type: decimal">
 <li>For kNN, consider a particular pair <span class="math inline">\((Y_i, X_i)\)</span></li>
@@ -290,7 +290,7 @@ Y \ \vert\  X = \mu(X) + \eta(X)
 </ul>
 </div>
 <div id="kernels" class="slide section level2">
-<h2>Kernels</h2>
+<h1>Kernels</h1>
 <p>(Again, more info in Ch. 4)</p>
 <ul>
 <li>There are two definitions of “kernels”. We’ll use only 1.</li>
@@ -302,7 +302,7 @@ Y \ \vert\  X = \mu(X) + \eta(X)
 </ul>
 </div>
 <div id="kernels-part-2" class="slide section level2">
-<h2>Kernels (part 2)</h2>
+<h1>Kernels (part 2)</h1>
 <ul>
 <li>In general, any function which integrates, is non-negative, and symmetric is a kernel in the sense used in the book</li>
 <li>You can think of any (unnormalized) symmetric density function (uniform, normal, Cauchy, etc.)</li>
@@ -314,7 +314,7 @@ Y \ \vert\  X = \mu(X) + \eta(X)
 </ul>
 </div>
 <div id="kernels-part-3" class="slide section level2">
-<h2>Kernels (part 3)</h2>
+<h1>Kernels (part 3)</h1>
 <ul>
 <li>You don’t need the normalizing constant</li>
 <li>To alter the <strong>support</strong>: take <span class="math inline">\((x-x_0)/h\)</span> and <span class="math inline">\(K(z) = K(z)/h\)</span></li>

@@ -3,9 +3,9 @@ title: "Chapter 1"
 author: "DJM"
 date: "31 January 2017"
 output:
+  pdf_document: default
   slidy_presentation:
     font_adjustment: -1
-  pdf_document: default
 ---
 
 ## The normal linear model
@@ -199,8 +199,8 @@ Let's try to minimize the __expected__ sum of squared errors (MSE)
 \[
 \begin{aligned}
 \mathbb{E}\left[(Y-f(X))^2\right] &= \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
-  &= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right] + \mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
-  &= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right]\right] + \mathbb{E}\left[\mathbb{E}\left[(Y-f(X))^2 \ \vert\  X\right]\right]\\
+  &= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right] + \mathbb{E}\left[(Y-f(X)) \ \vert\  X\right]^2\right]\\
+  &= \mathbb{E}\left[\mathrm{Var}\left[Y\ \vert\  X\right]\right] + \mathbb{E}\left[\mathbb{E}\left[(Y-f(X)) \ \vert\  X\right]^2\right]\\
 \end{aligned}
 \]
 
