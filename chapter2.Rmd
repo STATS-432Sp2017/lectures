@@ -3,9 +3,9 @@ title: "Chapter 2"
 author: "DJM"
 date: "January 29, 2017"
 output:
-  pdf_document: default
   slidy_presentation:
     font_adjustment: -1
+  pdf_document: default
 ---
 
 \newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
@@ -34,6 +34,7 @@ A quick overview:
 \[
 \mu(x) = \mu(u) + (x-u)^{\top} \frac{\partial \mu(x)}{\partial x}\vert_{x=u} + O(\lVert x-u\rVert^2)
 \]
+
 * The notation $f(x) = O(g(x))$ means that for any $x$ there exists a constant $C$ such that $f(x)/g(x) < C$.
 
 * More intuitively, this notation means that the remainder (all the higher order terms) are about the size of the distance between $x$ and $u$ or smaller.
@@ -95,7 +96,7 @@ A quick overview:
   - Suppose $\mu(x)=\beta_0+\beta_1 x_1$. It __is__ linear. What is our estimator of $\beta_0$?
   - If we instead estimate the model $y_i = \beta_0$, our estimator of $\beta_0$ will be biased. How biased?
   - But now suppose that $x_1= 12$ always. Then we don't need to include $x_1$ in the model. Why not?
-  - Form the matrix $[1 x_1]$. Are the columns collinear? What does this actually mean?
+  - Form the matrix $[1\ x_1]$. Are the columns collinear? What does this actually mean?
   
 ## When two variables are collinear, a few things happen.
 
