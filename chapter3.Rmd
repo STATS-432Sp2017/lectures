@@ -263,9 +263,7 @@ Our data is $\mathcal{D}_n = \{Y_1,\ldots,Y_n\}$ such that $Y_i \stackrel{i.i.d.
 
 ## Estimating the mean
 
-* Let $\hat{Y}=\bar{Y}_n$ be the sample mean.
-
-
+* Let $\hat{Y}=\bar{Y}_n$ be the sample mean.  
 * We can ask about the __estimation risk__ (since we're estimating $\mu$):
   \[
   \begin{aligned}
@@ -330,18 +328,14 @@ Let's see what happens anyway.
 ## Estimating the mean
 
   
-* Prediction risk: $R(\bar{Y}_n) = 1 + \frac{1}{n} = \sigma^2 + \frac{\sigma^2}{n}$
-  
-* Estimation risk: $R(\bar{Y}_n;\mu) =  \frac{1}{n}$
-  
+* Prediction risk: $R(\bar{Y}_n) = 1 + \frac{1}{n} = \sigma^2 + \frac{\sigma^2}{n}$  
+* Estimation risk: $R(\bar{Y}_n;\mu) =  \frac{1}{n}$  
 * There is actually a nice interpretation here:
-
-  1. The common $1/n$ term is $\Var{\bar{Y}_n}$
-
-  2. The extra factor of $1$ in the prediction risk is __irreducible error__ 
-    * $Y$ is a random variable, and hence noisy. 
-    * We can never eliminate it's intrinsic variance.  
-    * In other words, even if we knew $\mu$, we could never get closer than $1$, on average.
+    1. The common $1/n$ term is $\Var{\bar{Y}_n}$  
+    2. The extra factor of $1$ in the prediction risk is __irreducible error__ 
+        * $Y$ is a random variable, and hence noisy. 
+        * We can never eliminate it's intrinsic variance.  
+        * In other words, even if we knew $\mu$, we could never get closer than $1$, on average.
 
 * Intuitively, $\bar{Y}_n$ is the obvious thing to do.
 
@@ -407,8 +401,7 @@ legend(.5, 2, col=c(green,blue,red,'grey','grey'), lty=c(1,1,1,1,2), bty='n', le
 
 Just to restate:
 
-* If $\mu=$ `r mu` and $n=$ `r n` then it is better to predict with `r round(aopt,2)` $\overline{Y}_n$ than with $\overline{Y}_n$ itself.
-
+* If $\mu=$ `r mu` and $n=$ `r n` then it is better to predict with `r round(aopt,2)` $\overline{Y}_n$ than with $\overline{Y}_n$ itself.  
 * In this case
   1. $R(a)=R_1(a\overline{Y}_n) =$ `r round(risk(aopt,mu,n),2)`
   2. $R(\overline{Y}_n)=$ `r 1/n+sig2`
@@ -496,7 +489,7 @@ What is $R(a)$ for our estimator $\hat{Y}_a=a\bar{Y}_n$?
 > __Important implication:__ prediction risk is proportional to estimation risk.  However, defining estimation risk requires stronger assumptions.
   
 
-> In order to make good predictions, we want our prediction risk to be small.  This means that we want to `balance' the bias and variance.
+> In order to make good predictions, we want our prediction risk to be small.  This means that we want to "balance" the bias and variance.
   
 ##
 
@@ -683,7 +676,8 @@ The penalty term corrects for the optimism.
 - Why?
 
 To recap:
-> \[
+  
+   \[
   R_n(\hat{f}) = \E[\ell(Y,\hat{f}(X))]
   \]
   where the expectation is taken over the new data point $(Y,X)$
@@ -731,43 +725,36 @@ without using it, then
 ## Keep going
 
 * We can keep doing this until we try it for every data point.
-
 * And then average them! (Averages are good)
-
 * In the end we get
-
 \[
 \mbox{LOO-CV} = \sum_{i=1}^n \tilde{R}_i(\hat{f}^{(i)}) = \sum_{i=1}^n 
 \ell(Y_i - \hat{f}^{(i)}(X_i))
 \]
-
 * This is leave-one-out cross validation
 
 ## Problems with LOO-CV
 
 1. Each held out set is small $(n=1)$. Therefore, the variance of my predictions is high.
-
 2. Since each held out set is small, the training sets overlap. This is bad. 
-  * Usually, averaging reduces variance:
+    * Usually, averaging reduces variance:
     \[
     \Var{\overline{X}} = \frac{1}{n^2}\sum_{i=1}^n \Var{X_i} = \frac{1}{n}\Var{X_1}.
     \]
-  * But only if the variables are independent. If not, then
+    * But only if the variables are independent. If not, then
     \[
     \begin{aligned}
     \Var{\overline{X}} &= \frac{1}{n^2}\Var{ \sum_{i=1}^n X_i}\\ 
       & = \frac{1}{n}\Var{X_1} + \frac{1}{n^2}\sum_{i\neq j} \Cov{X_i}{X_j}.
     \end{aligned}
     \]
-  * Since the training sets overlap a lot, that covariance can be pretty big.
-  
+    * Since the training sets overlap a lot, that covariance can be pretty big.
 3. We have to estimate this model $n$ times.
-  * There is an exception to this one. More on that in a minute.
+    * There is an exception to this one. More on that in a minute.
   
 ## K-fold CV
 
 * To aleviate some of these problems, people usually use $K$-fold cross validation.
-
 * The idea of $K$-fold is 
   1. Divide the data into $K$ groups. 
   2. Leave a group out and estimate with the rest.
@@ -830,16 +817,14 @@ response.name <- function(formula) {
 
 ## Over-fitting vs. Under-fitting
 
-> Over-fitting means estimating a really complicated function when you don't have enough data.
+> Over-fitting means estimating a really complicated function when you don't have enough data. 
 
 * This is likely a low-bias/high-variance situation.
 
-> Under-fitting means estimating a really simple function when you have lots of data.
+> Under-fitting means estimating a really simple function when you have lots of data. 
 
 * This is likely a high-bias/low-variance situation.
-
 * Both of these outcomes are bad (they have high risk).
-
 * The best way to avoid them is to use a reasonable estimate of __prediction risk__ to choose how complicated your model should be.
 
 ## Example
