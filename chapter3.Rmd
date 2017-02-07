@@ -1,7 +1,7 @@
 ---
 title: "Chapter 3"
 author: "DJM"
-date: "2 February 2017"
+date: "7 February 2017"
 output:
   pdf_document: default
   slidy_presentation:
@@ -302,8 +302,6 @@ Our data is $\mathcal{D}_n = \{Y_1,\ldots,Y_n\}$ such that $Y_i \stackrel{i.i.d.
 \[
       \begin{aligned}
         R_n(0) &= \E[(0-Y)^2]\\ 
-                       &= \E[(Y-\mu+\mu)^2] \\ 
-                       &= \E[(Y-\mu)^2]+2\mu\E[(Y-\mu)] + \mu^2 \\ 
                        &= 1 + \mu^2
       \end{aligned}
 \]
@@ -328,7 +326,7 @@ Let's see what happens anyway.
 ## Estimating the mean
 
   
-* Prediction risk: $R(\bar{Y}_n) = 1 + \frac{1}{n} = \sigma^2 + \frac{\sigma^2}{n}$  
+* Prediction risk: $R(\bar{Y}_n) = 1 + \frac{1}{n}$    
 * Estimation risk: $R(\bar{Y}_n;\mu) =  \frac{1}{n}$  
 * There is actually a nice interpretation here:
     1. The common $1/n$ term is $\Var{\bar{Y}_n}$  
@@ -392,7 +390,7 @@ curve(biasSqA(x, mu=mu), from=0, to=1, col=red, add=TRUE)
 aopt = mu^2/(mu^2+1/n)
 abline(v=aopt, col='grey', lwd=1)
 abline(h = sig2+1/n, col='grey', lty=2)
-legend(.5, 2, col=c(green,blue,red,'grey','grey'), lty=c(1,1,1,1,2), bty='n', legend=c('risk','bias sq','var',paste0('best a = ',round(aopt,3)),'risk of mean'))
+legend(.5, 2, col=c(green,blue,red,'grey','grey'), lty=c(1,1,1,1,2), bty='n', legend=c('risk','var','bias sq',paste0('best a = ',round(aopt,3)),'risk of mean'))
 ```
 
 
