@@ -62,14 +62,16 @@ DJM
 <h1>Workflow for doing statistics</h1>
 <ol style="list-style-type: decimal">
 <li>Choose a family of models.</li>
+<li>Split the data in half (randomly)</li>
 <li>For each model:
 <ol style="list-style-type: decimal">
+<li>Use half the data to…</li>
 <li>Calculate CV to get estimates of the risk.</li>
 <li>Choose the tuning parameter that gets the lowest estimate of the risk.</li>
 </ol></li>
 <li>Choose a model by picking the <strong>model</strong> with the lowest estimate of the risk.</li>
-<li>Evaluate and describe your model. Make plots, interpret coefficients, make predictions, etc.</li>
-<li>If you see things if 4 you don’t like, propose a new model(s) to handle these issues and return to step 2.</li>
+<li>Evaluate and describe your model. Make plots, interpret coefficients, make predictions, etc. Use the <strong>other half</strong>. Why?</li>
+<li>If you see things if 5 you don’t like, propose a new model(s) to handle these issues and return to step 3.</li>
 </ol>
 </div>
 <div id="linear-smoothers" class="slide section level2">
@@ -84,7 +86,7 @@ DJM
 <li>If I want to get fitted values from the linear model</li>
 </ul>
 <p><span class="math display">\[
-\hat{Y} = X\hat{\beta} = X\left[ (X^\top X)^{-1} X^\top Y\right] = HY
+\hat{Y} = X\hat{\beta} = \left[X (X^\top X)^{-1} X^\top \right] Y = HY
 \]</span></p>
 <ul>
 <li>We generalize this to arbitrary matrices:</li>
@@ -93,7 +95,7 @@ DJM
 <p><strong>A linear smoother is any predictor <span class="math inline">\(f\)</span> that gives fitted values via <span class="math inline">\(f(X) = WY\)</span>.</strong></p>
 </blockquote>
 <ul>
-<li><p>Today, we will other ways of predicting <span class="math inline">\(Y\)</span> from <span class="math inline">\(X\)</span>.</p></li>
+<li><p>Today, we will learn other ways of predicting <span class="math inline">\(Y\)</span> from <span class="math inline">\(X\)</span>.</p></li>
 <li><p>If I can get the fitted values at my original datapoints <span class="math inline">\(X\)</span> by multiplying <span class="math inline">\(Y\)</span> by a matrix, then that is a linear smoother.</p></li>
 </ul>
 </div>
@@ -230,6 +232,9 @@ W<span class="fl">.1</span> =<span class="st"> </span><span class="kw">Wgauss</s
   denom =<span class="st"> </span>(<span class="dv">1</span>-<span class="kw">diag</span>(W))^<span class="dv">2</span>
   <span class="kw">return</span>(<span class="kw">mean</span>(resids2/denom))
 }
+
+looCV.forNiceModels &lt;-<span class="st"> </span>function(mdl) <span class="kw">mean</span>(<span class="kw">residuals</span>(mdl)^<span class="dv">2</span>/(<span class="dv">1</span>-<span class="kw">hatvalues</span>(mdl))^<span class="dv">2</span>)
+                                          
 looCVs =<span class="st"> </span><span class="kw">double</span>(<span class="dv">20</span>)
 sigmas =<span class="st"> </span><span class="kw">seq</span>(.<span class="dv">05</span>, <span class="dv">1</span>, <span class="dt">length.out=</span><span class="kw">length</span>(looCVs))
 for(i in <span class="dv">1</span>:<span class="kw">length</span>(looCVs)){
@@ -269,12 +274,12 @@ MSE - \sigma^2(x) = O(h^4) + O(1/nh).
 <p>[They DO depend on the properties of the Kernel, and the distribution which generated the data.]</p>
 <ul>
 <li>The <strong>Optimal Bandwidth</strong> minimizes the MSE: <span class="math display">\[
-\begin{align}
+\begin{aligned}
 h_{opt} &amp;= \arg\min_h C_1 h^4 + \frac{C_2}{nh}\\
 \Rightarrow 0 &amp;\overset{set}{=} 4 C_1 h^3 - \frac{C_2}{nh^2}\\
 \Rightarrow h^5 &amp;= O\left(\frac{1}{n}\right)\\
 \Rightarrow h_{opt} &amp;= O\left(\frac{1}{n^5}\right).
-\end{align}
+\end{aligned}
 \]</span></li>
 </ul>
 </div>

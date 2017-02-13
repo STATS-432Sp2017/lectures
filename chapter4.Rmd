@@ -3,9 +3,9 @@ title: "Chapter 4"
 author: "DJM"
 date: "14 February 2017"
 output:
-  pdf_document: default
   slidy_presentation:
     font_adjustment: -1
+  pdf_document: default
 ---
 
 \newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
@@ -20,12 +20,14 @@ output:
 ## Workflow for doing statistics
 
 1. Choose a family of models.
+2. Split the data in half (randomly)
 2. For each model:
+    1. Use half the data to...
     1. Calculate CV to get estimates of the risk.
     2. Choose the tuning parameter that gets the lowest estimate of the risk.
 3. Choose a model by picking the __model__ with the lowest estimate of the risk.
-4. Evaluate and describe your model. Make plots, interpret coefficients, make predictions, etc.
-5. If you see things if 4 you don't like, propose a new model(s) to handle these issues and return to step 2.
+4. Evaluate and describe your model. Make plots, interpret coefficients, make predictions, etc. Use the __other half__. Why?
+5. If you see things if 5 you don't like, propose a new model(s) to handle these issues and return to step 3.
 
 
 ## Linear smoothers
@@ -37,14 +39,14 @@ output:
 * If I want to get fitted values from the linear model
 
 \[
-\hat{Y} = X\hat{\beta} = X\left[ (X^\top X)^{-1} X^\top Y\right] = HY
+\hat{Y} = X\hat{\beta} = \left[X (X^\top X)^{-1} X^\top \right] Y = HY
 \]
 
 * We generalize this to arbitrary matrices:
 
-> __A linear smoother is any predictor $f$ that  gives fitted values via $f(X) = WY$.__
+> __A linear smoother is any predictor $f$ that  gives fitted values via $f(X) = WY$.__  
 
-* Today, we will other ways of predicting $Y$ from $X$.
+* Today, we will learn other ways of predicting $Y$ from $X$.
 
 * If I can get the fitted values at my original datapoints $X$ by multiplying $Y$ by a matrix, then that is a linear smoother.
 
@@ -233,6 +235,9 @@ looCV <- function(y, W){
   denom = (1-diag(W))^2
   return(mean(resids2/denom))
 }
+
+looCV.forNiceModels <- function(mdl) mean(residuals(mdl)^2/(1-hatvalues(mdl))^2)
+                                          
 looCVs = double(20)
 sigmas = seq(.05, 1, length.out=length(looCVs))
 for(i in 1:length(looCVs)){
