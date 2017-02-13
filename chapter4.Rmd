@@ -236,7 +236,9 @@ looCV <- function(y, W){
   return(mean(resids2/denom))
 }
 
-looCV.forNiceModels <- function(mdl) mean(residuals(mdl)^2/(1-hatvalues(mdl))^2)
+looCV.forNiceModels <- function(mdl){ 
+  mean(residuals(mdl)^2/(1-hatvalues(mdl))^2)
+}
                                           
 looCVs = double(20)
 sigmas = seq(.05, 1, length.out=length(looCVs))
@@ -244,7 +246,8 @@ for(i in 1:length(looCVs)){
   W = Wgauss(sigmas[i])
   looCVs[i] = looCV(y, W)
 }
-plot(sigmas, looCVs, type='b', col=2, las=1, mar=c(4,5,0,0), bty='n', ylab='', cex.axis=1, cex.lab=1)
+plot(sigmas, looCVs, type='b', col=2, las=1, mar=c(4,5,0,0), 
+     bty='n', ylab='', cex.axis=1, cex.lab=1)
 ```
 
 ## Back to my Gaussian example
@@ -267,7 +270,7 @@ text(5, 3,paste('Sigma =', round(sigmas[which.min(looCVs)],2)), cex=1)
 
 * The highest level overview is equation (4.16):
 
-> \[
+\[
   MSE - \sigma^2(x) = O(h^4) + O(1/nh).
 \]
 
@@ -285,7 +288,16 @@ text(5, 3,paste('Sigma =', round(sigmas[which.min(looCVs)],2)), cex=1)
 h_{opt} &= \arg\min_h C_1 h^4 + \frac{C_2}{nh}\\
 \Rightarrow 0 &\overset{set}{=} 4 C_1 h^3 - \frac{C_2}{nh^2}\\
 \Rightarrow h^5 &= O\left(\frac{1}{n}\right)\\
-\Rightarrow h_{opt} &= O\left(\frac{1}{n^5}\right).
+\Rightarrow h_{opt} &= O\left(\frac{1}{n^{1/5}}\right).
+\end{aligned}
+\]
+
+* If we plug this in, we get the __Oracle MSE__---the MSE for the optimal, though unavailable estimator.
+\[
+\begin{aligned}
+MSE-\sigma^2 &= O(h_{opt}^4) + O(1/nh_{opt})\\
+  &= O(n^{-4/5}) + O(1/n^{4/5})\\
+  &= O\left(\frac{1}{n^{4/5}}\right)
 \end{aligned}
 \]
 
@@ -369,6 +381,26 @@ MSE(h)-\sigma^2(x) = O(1/n^{4/(4+p)}) \hspace{2em} MSE(\theta_0) -\sigma^2(x) = 
 * Chapter 8 has some compromises that people use.
 
 * A __very, very__ questionable rule of thumb: if $p>\log(n)$, this may not work.
+
+## Summary
+
+* This is the lesson of the class (the second one)
+
+* How to do data analysis:
+
+1. Choose a family of models. Some parametric and some nonparametric
+2. Split the data in half (randomly)
+2. For each model:
+    1. Use half the data to...
+    1. Calculate CV  get estimates of the risk.
+    2. Choose any tuning parameters by using the one that has the lowest CV.
+3. Choose a model by picking the __model__ with the lowest CV.
+4. Evaluate and describe your model. Make plots, interpret coefficients, make predictions, etc. Use the __other half__. 
+5. If you see things if 5 you don't like, propose a new model(s) to handle these issues and return to step 3.
+
+* We like CV. It is good.
+
+* Split your data to make reasonable inferences.
 
 ## Some `npreg` discussion
 
