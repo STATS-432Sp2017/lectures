@@ -1,5 +1,3 @@
-### Starter code for Homework 3, problem 3 ###
-
 #Our true mean function: will be sin(x/2) on [0,4*pi] and sin(6*x) on [4*pi,8*pi]
 mu <- function(x){
   #Initialize a vector of zeros
