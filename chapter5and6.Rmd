@@ -1,0 +1,243 @@
+---
+title: "Chapter 5 and 6 responses"
+author: "DJM"
+date: "18 February 2016"
+output:
+  slidy_presentation: default
+  pdf_document: default
+---
+
+
+
+\newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
+\newcommand{\Var}[1]{\mathbb{V}\left[ #1 \right]}
+\newcommand{\Cov}[2]{\mathrm{Cov}\left[#1,\ #2\right]}
+\newcommand{\given}{\ \vert\ }
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+
+## HW reminders
+
+1. No code in the `pdf`. (Possibly in an appendix).
+  
+  Code does not count toward the page limit.
+  
+2. If you put plots or tables in, you must talk about them. 
+  > Rule of thumb: if you don't have anything good to say about a number, don't give the number (or plot) at all.
+  
+4. __MOST IMPORTANT__ you must explain your results. Simply providing them is not likely to get you credit.
+
+5. Look over the model solutions for the last assignments. 
+
+
+
+## Why Simulation?
+
+* Up until now, when we do linear models, we used $t$-statistics, $p$-values, CIs
+
+* These things are based on the sampling distribution of the estimators ($\hat{b}$) if the model is true and we don't do any model selection.
+
+* What if we do model selection, use Kernels, think the model is wrong?
+
+* None of those formulas work. And analogous formulas can be ~~impossible~~ (or painfully annoying) to derive.
+
+
+
+## Some simulation basics
+
+```{r}
+set.seed(2017-02-21)
+sample(1:10, replace=TRUE, prob=1:10/10)
+sample(letters[1:10], replace=TRUE, prob=1:10/10)
+sample(letters[1:10], replace=TRUE)
+sample(letters[1:10])
+```
+
+## Resampling data
+
+```{r, fig.align='center', fig.height=5}
+set.seed(2017-02-21)
+n = 100; x = runif(n)
+df = data.frame(x=x, y=3+2*x+rnorm(n))
+plot(df, las=1, bty='n',pch=19, col=4)
+```
+
+
+## A sample (with replacement), and a new draw from the same distribution
+
+```{r, fig.align='center', fig.height=5}
+plot(df, las=1, bty='n',pch=19, col=4)
+df2 = df[sample(1:n, replace=TRUE),]
+xn = runif(n)
+df3 = data.frame(x=xn, y=3+2*xn+rnorm(n))
+points(df2, col=2, pch=19)
+points(df3, col=3, pch=19)
+```
+
+## Add some lines
+
+```{r, fig.align='center', fig.height=5}
+plot(df, las=1, bty='n',pch=19, col=4)
+points(df2, col=2, pch=19)
+points(df3, col=3, pch=19)
+abline(lm(y~x, data=df), col=4, lwd=2)
+abline(lm(y~x, data=df2), col=2, lwd=2)
+abline(lm(y~x, data=df3), col=3, lwd=2)
+```
+
+## Using simulations to check modelling assumptions
+
+```{r, fig.align='center', fig.height=5}
+x = runif(n) - 0.5; y = 3+2*x + rnorm(n)*x^2
+dfHetero = data.frame(x=x, y=y)
+plot(dfHetero, las=1, bty='n', pch=19, col=4)
+abline(lm(y~x, data=dfHetero), col=4, lwd=2)
+abline(a=3, b=2, col=2)
+```
+
+## If the noise is homoskedastic...
+
+* The red and blue points should have the same distribution
+
+```{r, fig.align='center', fig.height=5}
+heteroMod = lm(y~x, data=dfHetero)
+plot(dfHetero$x, residuals(heteroMod), las=1, bty='n', pch=19, col=4)
+abline(h=0, col=4, lwd=2)
+points(dfHetero$x, residuals(heteroMod)[sample(1:n, replace=TRUE)], col=2, pch=19)
+```
+
+## That one was easy
+
+```{r, fig.align='center', fig.height=5}
+x = runif(n)-0.5
+y = 3+2*x + c(arima.sim(list(ar=.8), n, rand.gen = function(n) 0.1* rt(n, df=5)))
+dfTS = data.frame(x=x, y=y)
+plot(dfTS, las=1, bty='n', pch=19, col=4)
+abline(lm(y~x, data=dfTS), col=4, lwd=2)
+abline(a=3, b=2, col=2)
+```
+
+## If the noise is homoskedastic...
+
+* The red and blue points should have the same distribution
+
+```{r, fig.align='center', fig.height=5}
+tsMod = lm(y~x, data=dfTS)
+resids = residuals(tsMod)
+plot(dfTS$x, resids, las=1, bty='n', pch=19, col=4)
+abline(h=0, col=4, lwd=2)
+points(dfTS$x, resids[sample(1:n, replace=TRUE)], col=2, pch=19)
+```
+
+## But...
+
+```{r, fig.align='center', fig.height=5}
+plot(resids[-n], resids[-1], las=1, bty='n', pch=19, col=4)
+points(resids[-n][sample(1:(n-1),replace=TRUE)], resids[-1], col=2, pch=19)
+```
+
+
+## Another useful command
+
+```{r}
+sample.int(10)
+```
+
+## What's the deal with this Bootstrap?
+
+* Suppose I want to estimate something and get a CI.
+
+* But I don't know how to calculate the CI (or maybe I do, but it's hard)
+
+* Then what?
+
+## Example 1
+
+* Let $X_i\sim \chi_4^2$.
+
+* I know if I estimate the mean with $\bar{X}$, then by the CLT (if $n$ is big), 
+\[
+\frac{(\sqrt{n}(\bar{X}-\Expect{X})}{s} \approx N(0, 1).
+\]
+
+* This gives me a 95% confidence interval like
+\[
+\bar{X} \pm 2*s/\sqrt{n}
+\]
+
+* But I don't want to estimate the mean, I want to estimate the median.
+
+```{r, fig.align='center', fig.height=4}
+par(mar=c(2,3,0,0))
+curve(dchisq(x, df=4), from=0, to=12, bty='n', las=1, col=2,ylab='')
+abline(v=4, col='grey40') # mean
+abline(v=qchisq(.5, 4), col=2) # median
+```
+
+## Now what
+
+```{r, echo=FALSE}
+n=50
+```
+
+* I give you a sample of size `r n`, you give me the sample median.
+
+* How do you get a CI?
+
+* You can use the bootstrap!
+
+```{r, fig.align='center', fig.height=4}
+set.seed(2016-02-17)
+x = rchisq(n, 4)
+(med = median(x))
+B = 100
+alp = 0.05
+bootMed <- function(x) median(sample(x, length(x), replace=TRUE))
+bootDist = replicate(B, bootMed(x))
+bootCI = 2* med - quantile(bootDist, probs = c(1-alp/2, alp/2))
+plot(density(bootDist), bty='n', las=1, main='')
+abline(v=bootCI, col='grey')
+abline(v=med, col=1)
+abline(v=qchisq(.5, 4), col=2)
+```
+
+## An alternative
+
+* In that bootstrap, I didn't use any information about the data-generating process.
+
+* What if I told you that the data came from a $\chi^2$, but I didn't tell you the degrees of freedom?
+
+* You could try a "parametric" bootstrap:
+
+```{r, fig.align='center', fig.height=4}
+xbar = mean(x)
+s = sd(x)
+ParaBootSamp <- function(B, xbar, s){
+  means = rnorm(B, mean=xbar, sd=s/sqrt(n))
+  meds = qchisq(.5, means)
+  return(meds)
+}
+ParaBootDist = ParaBootSamp(B, xbar, s)
+ParaBootCI = 2* med - quantile(ParaBootDist, probs = c(1-alp/2, alp/2))
+plot(density(ParaBootDist), bty='n', las=1, main='')
+abline(v=ParaBootCI, col='grey')
+abline(v=med, col=1)
+abline(v=qchisq(.5, 4), col=2)
+```
+
+## In truth
+
+* Let's compare these intervals
+
+* The nonparametric bootstrap (first one) had a width of
+```{r}
+bootCI[2] - bootCI[1]
+```
+
+* The parametric bootstrap (second one) had a width of
+```{r}
+ParaBootCI[2] - ParaBootCI[1]
+```
+
+* Using theory, we could find the exact CI. In this case, it has a width of 1.76.
