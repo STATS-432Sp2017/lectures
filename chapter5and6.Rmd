@@ -241,3 +241,318 @@ ParaBootCI[2] - ParaBootCI[1]
 ```
 
 * Using theory, we could find the exact CI. In this case, it has a width of 1.76.
+
+
+## What's the deal with this Bootstrap?
+
+\[
+\newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
+\newcommand{\Var}[1]{\mathbb{V}\left[ #1 \right]}
+\newcommand{\Cov}[2]{\mathrm{Cov}\left[#1,\ #2\right]}
+\newcommand{\given}{\ \vert\ }
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\]
+
+![](bootstraps.jpg)
+
+## What's the deal with this bootstrap?
+
+* Suppose I want to estimate something and get a CI.
+
+* But I don't know how to calculate the CI (or maybe I do, but it's hard)
+
+* Then what?
+
+## Example 1
+
+* Let $X_i\sim \chi_4^2$.
+
+* I know if I estimate the mean with $\bar{X}$, then by the CLT (if $n$ is big), 
+\[
+\frac{(\sqrt{n}(\bar{X}-\Expect{X})}{s} \approx N(0, 1).
+\]
+
+* This gives me a 95% confidence interval like
+\[
+\bar{X} \pm 2*s/\sqrt{n}
+\]
+
+* But I don't want to estimate the mean, I want to estimate the median.
+
+```{r, fig.align='center', fig.height=4}
+par(mar=c(2,3,0,0))
+curve(dchisq(x, df=4), from=0, to=12, bty='n', las=1, col=2,ylab='')
+abline(v=4, col='grey40') # mean
+abline(v=qchisq(.5, 4), col=2) # median
+```
+
+## Now what
+
+```{r, echo=FALSE}
+n=50
+```
+
+* I give you a sample of size `r n`, you give me the sample median.
+
+* How do you get a CI?
+
+* You can use the bootstrap!
+
+```{r, fig.align='center', fig.height=4}
+set.seed(2016-02-17)
+x = rchisq(n, 4)
+(med = median(x))
+B = 100
+alp = 0.05
+bootMed <- function(x) median(sample(x, length(x), replace=TRUE))
+bootDist = replicate(B, bootMed(x))
+bootCI = 2* med - quantile(bootDist, probs = c(1-alp/2, alp/2))
+plot(density(bootDist), bty='n', las=1, main='')
+abline(v=bootCI, col='grey')
+abline(v=med, col=1)
+abline(v=qchisq(.5, 4), col=2)
+```
+
+## An alternative
+
+* In that bootstrap, I didn't use any information about the data-generating process.
+
+* What if I told you that the data came from a $\chi^2$, but I didn't tell you the degrees of freedom?
+
+* You could try a "parametric" bootstrap:
+
+```{r, fig.align='center', fig.height=4}
+xbar = mean(x)
+s = sd(x)
+ParaBootSamp <- function(B, xbar, s){
+  means = rnorm(B, mean=xbar, sd=s/sqrt(n))
+  meds = qchisq(.5, means)
+  return(meds)
+}
+ParaBootDist = ParaBootSamp(B, xbar, s)
+ParaBootCI = 2* med - quantile(ParaBootDist, probs = c(1-alp/2, alp/2))
+plot(density(ParaBootDist), bty='n', las=1, main='')
+abline(v=ParaBootCI, col='grey')
+abline(v=med, col=1)
+abline(v=qchisq(.5, 4), col=2)
+```
+
+## In truth
+
+* Let's compare these intervals
+
+* The nonparametric bootstrap (first one) had a width of
+```{r}
+bootCI[2] - bootCI[1]
+```
+
+* The parametric bootstrap (aka "model based", second one) had a width of
+```{r}
+ParaBootCI[2] - ParaBootCI[1]
+```
+
+* Using theory, we could find the exact CI. In this case, it has a width of 1.76.
+
+## Bootstrap diagram
+
+![](boot1.png)
+
+## Bootstrap intuition
+
+![](boot2.png)
+
+## Bootstrap error sources
+
+(From the bottom up on the last slide)
+
+1. Simulation error: using only $B$ samples to estimate $F$ with $\hat{F}$.
+
+2. Statistical error: our data depended on a sample from the population. We don't have the whole population so we make an error by using a sample (Note: this part is what ~~always~~ happens with data, and what the science of statistics analyzes.)
+
+3. Specification error: If we use the model based bootstrap, and our model is wrong, then we think we are badly overconfident in our assessment of error. 
+
+## Recap
+
+* There are essentially 2 types of bootstrap
+    1. Parametric
+    2. Nonparametric
+    
+* If you ~~really~~ believe your model, use the first
+
+* If not, use the second
+
+* Both are valid
+
+## Example 2
+
+```{r, echo=FALSE}
+library(MASS)
+fatcats = cats
+fatcats$Hwt = fitted(lm(Hwt~Bwt, data=cats)) + rt(nrow(fatcats), 3)
+```
+
+```{r, fig.width=8, fig.height=6, fig.align='center'}
+library(MASS)
+plot(Hwt~Bwt, data=fatcats, pch=19, col=4, las=1)
+```
+
+## A model
+
+```{r}
+cats.lm <- lm(Hwt ~ 0+Bwt,data=fatcats)
+summary(cats.lm)
+confint(cats.lm)
+```
+
+## I think that that CI is wrong...
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+qqnorm(residuals(cats.lm))
+qqline(residuals(cats.lm))
+```
+
+## Model-based bootstrap
+
+```{r}
+catsResids <- function(){
+  resids = residuals(cats.lm)
+  newResids = sample(resids, length(resids), replace=TRUE) # resample the residuals from the original model
+  newCats = data.frame(Bwt = fatcats$Bwt, Hwt=fitted(cats.lm) + newResids) # create a new dataframe with the original x's but new y's
+  return(newCats)
+}
+fitCats <- function(newCats) coef(lm(Hwt~0+Bwt, data=newCats)) # get the coef from OLS
+fitCats(fatcats) # test the above on original data, should give same coef
+```
+
+
+## Model-based bootstrap
+
+```{r, cache=TRUE, autodep=TRUE}
+catsBoot <- function(B, alpha, func, bootname){
+  coefs = replicate(B, fitCats(func())) # the bootstrap distribution hat(F)
+  ci = 2*coef(cats.lm) - quantile(coefs, probs = c(1-alp/2, alp/2)) # ci
+  cis = rbind(confint(cats.lm), ci) # The rest just for comparison
+  rownames(cis) = c('original',bootname)
+  return(cis)
+}
+cisPara = catsBoot(1000,.05, catsResids, 'MBB') # do it!
+```
+
+## Nonparametric bootstrap
+
+```{r,cache=TRUE, autodep=TRUE}
+resampData <- function(){
+  sampled.rows = sample(1:nrow(fatcats),size=nrow(fatcats),replace=TRUE) # resample original data
+  new.cats = fatcats[sampled.rows,]
+}
+cisNonPara = catsBoot(1000, .05, resampData,'NonParaB') # use the prev func to bootstrap on resampled data
+cisPara
+cisNonPara
+```
+
+## Bootstrapping with nonparametric regression
+
+* This is a bit harder
+
+* The reason is that we use CV to choose the bandwidth
+
+* So we have to repeat that step in the bootstrapping
+
+* That is:
+    1. Input data
+    1. Use CV to choose a smoothing parameter
+    2. Use the chosen parameter to estimate the smooth function
+    3. Resample the data
+    4. Using this new data, repeat 2 and 3
+    
+## Project progress report
+
+* Due ~~24 March at 11:59 pm~~ (week after spring break, not before)
+
+* Your report should have 3 components:
+    1. A list of teammate names and an explanation of what is interesting to you about this data.
+    2. A short introductory paragraph introducing the data and describing some potential questions you might investigate.
+    3. A lengthy exploratory data analysis.
+    
+* The third part is a big deal.
+
+* You need to provide evidence that you have explored the data carefully and meaningfully.
+
+* Code must be integrated.
+
+* Think of this like the first part of an undirected homework.
+
+## Multiple datafiles
+
+* The data come in multiple files, all on Canvas.
+
+* This is not like data you have been working with before.
+
+* I haven't cleaned it and made it easy to work with.
+
+* You have to clean it and make it easy to work with.
+
+## Structure of the files
+
+* Typically, you get data that looks like this:
+
+```{r, echo=FALSE}
+signif(data.frame(y=rnorm(5), x1=rnorm(5), x2=rnorm(5)),3)
+```
+
+* This time, your data looks like this:
+
+```{r}
+lb1 = read.csv('../../projectData/IUFootball/linebacker1.csv',skip=1, header=TRUE)
+head(lb1)
+```
+
+# Test
+
+## Structure of the files
+
+* You need to decide what the "unit of observation" is.
+    * Maybe it is "session", then this data frame is "ok"
+    * Maybe it is "data", then there may be two sessions per day, how do you combine them?
+    * Maybe it is "week", then there are 5-7 sessions per game. Again how do you combine?
+    
+* ~~YOU~~ need to really think about this. You may (will, can, should) use all three to do some analyses.
+
+## Some useful code snipets
+```{r,echo=FALSE}
+projDir = '~/Documents/Work/Teaching and TA/s432/projectData/IUFootball/'
+```
+
+```{r}
+files = list.files(projDir, pattern='.csv') # finds .csv files in directory 'projDir'
+dnames = strsplit(files, '.csv') # gets only the 'handle'
+db1 = read.csv(paste0(projDir, files[1]), skip=1, stringsAsFactors = FALSE) # skips first row which contains garbage
+db1grades = read.csv(paste0(projDir, files[2])) # no need to skip
+```
+
+## Basic text processing
+
+* Fix the `r names(db1)[3]` variable.
+
+```{r}
+dt = db1$Start.DateTime
+dt = as.POSIXlt(dt, format='%m/%d/%y %H:%M')
+head(dt)
+head(weekdays(dt))
+dt[2]-dt[1]
+```
+
+* Strip the "date" from the session type
+
+```{r}
+sess = db1$Session.Name
+head(sess)
+sess = strsplit(sess, ' ') # split by spaces
+sess = lapply(sess, function(x) x[-1]) # remove the 'date'
+sess = sapply(sess, paste, collapse=' ') # collapse back down
+head(sess)
+```
+
+* Be careful with these things sometimes it might say "scrimage" and others "scrimmage". Converting to factors will not fix this (each will be its own level). Make sure to check for such issues.
