@@ -133,7 +133,7 @@ curve(dnorm(x,mean=x[49],sd=.2)-2, from=0, to=2*pi, col='blue',add=TRUE)
 * Let's look at row 49 of the W matrix here:
 
 \[
-W_{49,j} = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(- \frac{1}{2\sigma^2}(x_j - x_{49})\right)
+W_{49,j} = \frac{1}{\sqrt{2\pi\sigma^2}} \exp\left(- \frac{1}{2\sigma^2}(x_j - x_{49})^2\right)
 \]
 
 * For the plot, I made $\sigma=.2$.
@@ -274,9 +274,9 @@ text(5, 3,paste('Sigma =', round(sigmas[which.min(looCVs)],2)), cex=1)
   MSE - \sigma^2(x) = O(h^4) + O(1/nh).
 \]
 
-* The first term on the left is the __squared bias__ while the second term on the right is the __variance__.
-
 * Note: we have moved __irreducible noise__ to the left of `=`.
+
+* The first term on the right is the __squared bias__ while the second term on the right is the __variance__.
 
 * The "big-Oh" notation means we have removed a bunch of constants that don't depend on $n$ or $h$.
   
