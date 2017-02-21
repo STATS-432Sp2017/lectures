@@ -3,8 +3,9 @@ title: "Chapter 5 and 6"
 author: "DJM"
 date: "21 February 2017"
 output:
-  slidy_presentation: default
   pdf_document: default
+  beamer_presentation: default
+  slidy_presentation: default
 ---
 
 
@@ -92,7 +93,7 @@ head(attend)
 
 * Up until now, when we do linear models, we used $t$-statistics, $p$-values, CIs
 
-* These things are based on the sampling distribution of the estimators ($\hat{b}$) if the model is true and we don't do any model selection.
+* These things are based on the sampling distribution of the estimators ($\hat{\beta}$) if the model is true and we don't do any model selection.
 
 * What if we do model selection, use Kernels, think the model is wrong?
 
@@ -127,7 +128,7 @@ plot(df, las=1, bty='n',pch=19, col=4)
 df2 = df[sample(1:n, replace=TRUE),]
 xn = runif(n)
 df3 = data.frame(x=xn, y=3+2*xn+rnorm(n))
-points(df2, col=2, pch=19)
+points(df2, col=2, pch='+', cex=1.5)
 points(df3, col=3, pch=19)
 ```
 
@@ -135,7 +136,7 @@ points(df3, col=3, pch=19)
 
 ```{r, fig.align='center', fig.height=5}
 plot(df, las=1, bty='n',pch=19, col=4)
-points(df2, col=2, pch=19)
+points(df2, col=2, pch='+', cex=1.5)
 points(df3, col=3, pch=19)
 abline(lm(y~x, data=df), col=4, lwd=2)
 abline(lm(y~x, data=df2), col=2, lwd=2)
@@ -189,13 +190,13 @@ points(dfTS$x, resids[sample(1:n, replace=TRUE)], col=2, pch=19)
 ## But...
 
 ```{r, fig.align='center', fig.height=5}
-lag.resids = data.frame(xlag = resids[-n], x = resids[-1])
+lag.resids = data.frame(lag.resids = resids[-n], resids = resids[-1])
 plot(lag.resids, las=1, bty='n', pch=19, col=4)
-resamp.lag.resids = data.frame(xlag=resids[-n], 
-                      x=resids[sample.int(nrow(lag.resids), replace=TRUE)])
+resamp.lag.resids = data.frame(lag.resids=resids[-n], 
+                      resids=resids[sample.int(nrow(lag.resids), replace=TRUE)])
 points(resamp.lag.resids, col=2, pch=19)
-abline(lm(x~xlag, data=lag.resids), col=4)
-abline(lm(x~xlag, data=resamp.lag.resids), col=2)
+abline(lm(resids~lag.resids, data=lag.resids), col=4)
+abline(lm(resids~lag.resids, data=resamp.lag.resids), col=2)
 ```
 
 
@@ -236,7 +237,7 @@ sample.int(10)
 ```{r, fig.align='center', fig.height=4}
 par(mar=c(2,3,0,0))
 curve(dchisq(x, df=4), from=0, to=12, bty='n', las=1, col=2,ylab='')
-abline(v=4, col='grey40') # mean
+abline(v=4, col=4) # mean
 abline(v=qchisq(.5, 4), col=2) # median
 ```
 
@@ -262,8 +263,8 @@ bootMed <- function(x) median(sample(x, length(x), replace=TRUE))
 bootDist = replicate(B, bootMed(x))
 bootCI = 2* med - quantile(bootDist, probs = c(1-alpha/2, alpha/2))
 plot(density(bootDist), bty='n', las=1, main='')
-abline(v=bootCI, col='grey')
-abline(v=med, col=1)
+abline(v=bootCI, col=1, lty=3)
+abline(v=med, col=4)
 abline(v=qchisq(.5, 4), col=2)
 ```
 
@@ -286,8 +287,8 @@ ParaBootSamp <- function(B, xbar, s){
 ParaBootDist = ParaBootSamp(B, xbar, s)
 ParaBootCI = 2* med - quantile(ParaBootDist, probs = c(1-alpha/2, alpha/2))
 plot(density(ParaBootDist), bty='n', las=1, main='')
-abline(v=ParaBootCI, col='grey')
-abline(v=med, col=1)
+abline(v=ParaBootCI, col=1, lty=3)
+abline(v=med, col=4)
 abline(v=qchisq(.5, 4), col=2)
 ```
 
