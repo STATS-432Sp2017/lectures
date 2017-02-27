@@ -1,0 +1,321 @@
+---
+title: "Chapter 9"
+author: "DJM"
+date: "7 March 2017"
+output:
+  slidy_presentation: default
+  pdf_document: default
+---
+
+\newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
+\newcommand{\Var}[1]{\mathbb{V}\left[ #1 \right]}
+\newcommand{\Cov}[2]{\mathrm{Cov}\left[#1,\ #2\right]}
+\newcommand{\given}{\ \vert\ }
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\argmin}[1]{\underset{#1}{\textrm{argmin}}}
+\newcommand{\tr}[1]{\mbox{tr}(#1)}
+
+
+
+```{r setup, echo=FALSE}
+# Need the knitr package to set chunk options
+library(knitr)
+# Set knitr options for knitting code into the report:
+# - Don't print out code (echo)
+# - Save results so that code blocks aren't re-run unless code changes (cache),
+# _or_ a relevant earlier code block changed (autodep), but don't re-run if the
+# only thing that changed was the comments (cache.comments)
+# - Don't clutter R output with messages or warnings (message, warning)
+  # This _will_ leave error messages showing up in the knitted report
+opts_chunk$set(message=FALSE, warning=FALSE, fig.align='center',fig.width=10,
+               fig.height=4)
+```
+
+
+## Chapter 9
+
+* Here we introduce the concept of GAMs ( __G__ eneralized __A__ dditive __M__ odels)
+
+* The basic idea is to imagine that the response is the sum of some functions of the predictors:
+\[
+\Expect{Y_i \given X_i=x_i} = \alpha + f_1(x_{i1})+\cdots+f_p(x_{ip}).
+\]
+
+* Note that OLS __is__ a GAM (take $f_j(x_{ij})=\beta_j x_{ij}$):
+\[
+\Expect{Y_i \given X_i=x_i} = \alpha + \beta_1 x_{i1}+\cdots+\beta_p x_{ip}.
+\]
+
+* The algorithm for fitting these things is called "backfitting":
+    
+    1. Center $Y$ and $X$.
+    2. Hold $f_k$ for all $k\neq j$ fixed, and regress $f_j$ on the partial residuals using your favorite smoother.
+    3. Repeat for $1\leq j\leq p$.
+    4. Repeat steps 2 and 3 until the estimated functions "stop moving" (iterate)
+    5. Return the results.
+    
+## Results
+
+* We're not going to try to code this ourselves (though it's not hard and good practice).
+
+* There are two `R` packages that do this for us. I find `mgcv` easier.
+
+* Let's look at a small example.
+
+```{r, fig.align='center',fig.width=10,fig.height=4,message=FALSE}
+if (!is.element("mgcv", installed.packages()[,1]) ) install.packages("mgcv") # installs if it isn't already
+library(mgcv)
+set.seed(03-07-2016)
+n = 500
+x1 = runif(n, 0, 2*pi)
+x2 = runif(n)
+y = 5 + 2*sin(x1) + 8*sqrt(x2)+rnorm(n,sd=.5)
+```
+
+
+## More plots
+
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+plot(x1, y, col=2, pch=19, bty='n', las=1)
+plot(x2, y, col=3, pch=19, bty='n', las=1)
+```
+
+## Small example
+
+This just fits the linear model.
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+df = data.frame(y, x1, x2)
+ex = gam(y~x1+x2, data=df)
+summary(ex)
+plot(residuals(ex),fitted(ex), bty='n', las=1, pch=19, col=4)
+```
+
+## Smoothing
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+ex.smooth = gam(y~s(x1)+s(x2), data=df) # uses splines with GCV on each xi
+coefficients(ex.smooth) # still produces something
+plot(ex.smooth, pages = 1, scale=0, shade=TRUE, resid=TRUE, se=2, bty='n', las=1)
+```
+
+## Residuals vs. fitted
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+plot(residuals(ex.smooth), fitted(ex.smooth), bty='n', las=1, pch=19, col=4)
+```
+
+## Redoing the example in the text
+
+```{r, load-data}
+housing <- read.csv("http://www.stat.cmu.edu/~cshalizi/ADAfaEPoV/data/calif_penn_2011.csv") # load the data from the web
+housing <- na.omit(housing) # removes any row with an NA
+calif <- housing[housing$STATEFP==6,] # gets the california data
+```
+
+## Linear model
+
+```{r, lin-model}
+calif.lm <- lm(log(Median_house_value) ~ Median_household_income
+  + Mean_household_income + POPULATION + Total_units + Vacant_units + Owners
+  + Median_rooms + Mean_household_size_owners + Mean_household_size_renters
+  + LATITUDE + LONGITUDE, data = calif) # why this model and not another?
+print(summary(calif.lm), signif.stars=FALSE, digits = 3) # less annoying output
+```
+
+## Some model evaluation
+
+```{r, lin-model-eval}
+round(sqrt(mean(residuals(calif.lm)^2)),3) # how big are our errors (on log scale)
+round(exp(sqrt(mean(residuals(calif.lm)^2)))-1,3) # on the actual scale
+preds.lm <- predict(calif.lm,se.fit=TRUE)
+predlims <- function(preds,sigma) { # this function gets Prediction Intervals (CIs for preds)
+  prediction.sd <- sqrt(preds$se.fit^2+sigma^2) # remember this formula??
+  upper <- preds$fit+2*prediction.sd
+  lower <- preds$fit-2*prediction.sd
+  lims <- cbind(lower=lower,upper=upper)
+  return(lims)
+}
+predlims.lm <- predlims(preds.lm,sigma=summary(calif.lm)$sigma)
+mean((log(calif$Median_house_value) <= predlims.lm[,"upper"]) # percentage of actual observations inside the CI
+  & (log(calif$Median_house_value) >= predlims.lm[,"lower"]))
+round(median(preds.lm$se.fit),3) # median size of the pred errors (log scale)
+round(exp(median(preds.lm$se.fit))-1,3) # percent in $
+```
+
+## Plot our predictions
+
+```{r, lin-pred-plots} 
+plot(calif$Median_house_value,exp(preds.lm$fit),type="n", # don't put the points here, we'll do that later so they're visible
+  xlab="Actual price ($)",ylab="Predicted ($)", main="Linear model",
+  ylim=c(0,exp(max(predlims.lm)))) # predicted vs. actual
+segments(calif$Median_house_value,exp(predlims.lm[,"lower"]),
+  calif$Median_house_value,exp(predlims.lm[,"upper"]), col="grey") # the individual prediction intervals
+abline(a=0,b=1,lty="dashed") # points along this line are "perfect"
+cols = rep(1,nrow(calif))
+cols[(log(calif$Median_house_value) > predlims.lm[,"upper"]) |
+  (log(calif$Median_house_value) < predlims.lm[,"lower"])] = 2 # make "bad" predictions red
+points(calif$Median_house_value,exp(preds.lm$fit),pch=16,cex=0.2, col=cols)
+```
+
+## Zoom in on the bad part
+
+```{r, lin-pred-plot2} 
+plot(calif$Median_house_value,exp(preds.lm$fit),type="n", 
+  xlab="Actual price ($)",ylab="Predicted ($)", main="Linear model",
+  ylim=c(0,4e5), xlim=c(0,2e5)) # changed the limits here, the rest is the same
+segments(calif$Median_house_value,exp(predlims.lm[,"lower"]),
+  calif$Median_house_value,exp(predlims.lm[,"upper"]), col="grey") 
+abline(a=0,b=1,lty="dashed")
+cols = rep(1,nrow(calif))
+cols[(log(calif$Median_house_value) > predlims.lm[,"upper"]) |
+  (log(calif$Median_house_value) < predlims.lm[,"lower"])] = 2
+points(calif$Median_house_value,exp(preds.lm$fit),pch=16,cex=0.5, col=cols)
+```
+
+## The GAM
+
+```{r, estim-gam}
+calif.gam <- gam(log(Median_house_value)
+  ~ s(Median_household_income) + s(Mean_household_income) + s(POPULATION)
+  + s(Total_units) + s(Vacant_units) + s(Owners) + s(Median_rooms)
+  + s(Mean_household_size_owners) + s(Mean_household_size_renters)
+  + s(LATITUDE) + s(LONGITUDE), data=calif) # just put 's( )' around everything
+round(sqrt(mean(residuals(calif.gam)^2)),3) # how big are our errors (on log scale), doing better (in sample) than before
+round(exp(sqrt(mean(residuals(calif.gam)^2)))-1,3) # on the actual scale
+preds.gam <- predict(calif.gam,se.fit=TRUE) # works just like before
+round(median(preds.gam$se.fit),3) # median size of the pred errors (log scale)
+round(exp(median(preds.gam$se.fit))-1,3) # percent in $, not as precise as before, recognizing uncertainty
+predlims.gam <- predlims(preds.gam,sigma=sqrt(calif.gam$sig2)) # this is why we wrote the function
+mean((log(calif$Median_house_value) <= predlims.gam[,"upper"]) # percentage of actual observations inside the CI
+  & (log(calif$Median_house_value) >= predlims.gam[,"lower"])) # similar to before
+```
+
+
+## Evaluating
+
+```{r, gam-preds}
+plot(calif$Median_house_value,exp(preds.gam$fit),type="n",
+  xlab="Actual price ($)",ylab="Predicted ($)", main="First additive model",
+  ylim=c(0,exp(max(predlims.gam)))) # same plot as before
+segments(calif$Median_house_value,exp(predlims.gam[,"lower"]),
+  calif$Median_house_value,exp(predlims.gam[,"upper"]), col="grey")
+abline(a=0,b=1,lty="dashed")
+cols = rep(1,nrow(calif))
+cols[(log(calif$Median_house_value) > predlims.gam[,"upper"]) |
+  (log(calif$Median_house_value) < predlims.gam[,"lower"])] = 2 # just change the predlims object
+points(calif$Median_house_value,exp(preds.gam$fit),pch=16,cex=0.2,col=cols)
+```
+
+## Partial response functions
+
+```{r, gam1-prf,fig.height=12}
+plot(calif.gam, pages = 1, scale=0, shade=TRUE, resid=TRUE, se=2, bty='n', las=1)
+```
+
+## Partial response functions, take 2
+
+```{r, gam1-prf2,fig.height=12}
+plot(calif.gam, pages = 1, scale=0, shade=TRUE, se=2, bty='n', las=1)
+```
+
+## Do it again, a bit differently
+
+```{r, gam2}
+calif.gam2 <- gam(log(Median_house_value)
+  ~ s(Median_household_income) + s(Mean_household_income) + s(POPULATION)
+  + s(Total_units) + s(Vacant_units) + s(Owners) + s(Median_rooms)
+  + s(Mean_household_size_owners) + s(Mean_household_size_renters)
+  + s(LONGITUDE,LATITUDE), data=calif) # does fully nonparametric regression on Long and Lat
+round(exp(sqrt(mean(residuals(calif.gam2)^2)))-1,3)
+preds.gam2 <- predict(calif.gam2,se.fit=TRUE)
+round(exp(median(preds.gam2$se.fit))-1,3) # percent in $, not as precise as before, recognizing uncertainty
+predlims.gam2 <- predlims(preds.gam2,sigma=sqrt(calif.gam2$sig2))
+mean((log(calif$Median_house_value) <= predlims.gam2[,"upper"]) 
+  & (log(calif$Median_house_value) >= predlims.gam2[,"lower"]))
+```
+
+## Another partial response plot
+
+```{r, gam2-prf,fig.height=12}
+plot(calif.gam2, pages = 1, scale=0, shade=TRUE, se=2, bty='n', las=1)
+```
+
+## Zoom in on the interaction of Lat. and Long.
+
+```{r, gam2-wireframe,fig.height=12}
+plot(calif.gam2,select=10,phi=60,pers=TRUE,ticktype="detailed",cex.axis=0.5)
+```
+
+## A different version
+
+```{r, gam2-contour, fig.height=12}
+plot(calif.gam2,select=10,scheme=2,se=FALSE)
+```
+
+## Function for drawing maps with colored points
+
+This is slightly different from the text, since I like colors
+
+```{r, colormapper}
+graymapper <- function(z, x=calif$LONGITUDE, y=calif$LATITUDE,
+  n.levels=10, breaks=NULL, break.by="length", legend.loc="topright",
+  digits=3,...) {
+  # my.greys = grey(((n.levels-1):0)/n.levels) # I like colors (below)
+  my.greys = colorspace::diverge_hsv(n.levels)
+  if (!is.null(breaks)) { # if you want to make these yourself
+    stopifnot(length(breaks) == (n.levels+1))
+  }
+  else { # How to make them automagically
+    if(identical(break.by,"length")) {
+      breaks = seq(from=min(z),to=max(z),length.out=n.levels+1)
+    } else {
+      breaks = quantile(z,probs=seq(0,1,length.out=n.levels+1))
+    }
+  }
+  z = cut(z, breaks, include.lowest=TRUE)
+  colors = my.greys[z]
+  plot(x,y,col=colors,bg=colors,...) # ... passes along options
+  if (!is.null(legend.loc)) {
+    breaks.printable <- signif(breaks[1:n.levels],digits)
+    legend(legend.loc,legend=breaks.printable,fill=my.greys)
+  }
+  invisible(breaks) # returns invisibly (only if you assign to an object)
+}
+```
+
+
+## Maps of predictions
+
+```{r, fig.height=10}
+par(mfrow=c(2,2))
+calif.breaks <- graymapper(calif$Median_house_value, pch=16, xlab="Longitude",
+  ylab="Latitude",main="Data",break.by="quantiles")
+graymapper(exp(preds.lm$fit), breaks=calif.breaks, pch=16, xlab="Longitude",
+  ylab="Latitude",legend.loc=NULL, main="Linear model")
+graymapper(exp(preds.gam$fit), breaks=calif.breaks, legend.loc=NULL,
+  pch=16, xlab="Longitude", ylab="Latitude",main="First additive model")
+graymapper(exp(preds.gam2$fit), breaks=calif.breaks, legend.loc=NULL,
+  pch=16, xlab="Longitude", ylab="Latitude",main="Second additive model")
+```
+
+## Maps of errors
+
+```{r, fig.height=10}
+par(mfrow=c(2,2))
+graymapper(calif$Median_house_value, pch=16, xlab="Longitude",
+  ylab="Latitude", main="Data", break.by="quantiles")
+errors.in.dollars <- function(x) { calif$Median_house_value - exp(fitted(x)) }
+lm.breaks <- graymapper(residuals(calif.lm), pch=16, xlab="Longitude",
+  ylab="Latitude", main="Residuals of linear model",break.by="quantile")
+graymapper(residuals(calif.gam), pch=16, xlab="Longitude",
+  ylab="Latitude", main="Residuals errors of first additive model",
+  breaks=lm.breaks, legend.loc=NULL)
+graymapper(residuals(calif.gam2), pch=16, xlab="Longitude",
+  ylab="Latitude", main="Residuals of second additive model",
+  breaks=lm.breaks, legend.loc=NULL)
+```
+

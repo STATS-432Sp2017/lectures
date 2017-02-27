@@ -1,7 +1,7 @@
 ---
 title: "Chapter 7"
 author: "DJM"
-date: "28 February 2016"
+date: "28 February 2017"
 output:
   pdf_document: default
   slidy_presentation: default
@@ -24,11 +24,13 @@ output:
 * OLS stands for "ordinary least-squares".
 
 * Essentially, it means "solve the least-squares problem"
+
 \[
 \hat{\beta} = \argmin{\beta} \sum_{i=1}^n (x_i^\top\beta - y_i)^2 = (X^\top X)^{-1} X^\top Y
 \]
 
 * The hat matrix is
+
 \[
 \hat{Y} = X\hat{\beta} = X(X^\top X)^{-1} X^\top Y = HY
 \]
@@ -126,39 +128,7 @@ This is locally constant regression.
 
 * This is  just a transformation: just like when you looked at qq-plots and decided to model $\log Y$ rather than $Y$.
     
-## Local linear vs. Kernels
 
-* People often wonder whether to use local linear regression or Kernels.
-
-* Like with many things, there isn't really a cut-and-dried answer.
-
-* Some practitioners prefer local linear regression.
-
-* It's main benefit is to correct "boundary bias".
-
-* Otherwise, not much different. 
-
-
-
-## Repeat of Ch. 4
-
-* We can estimate this easily with both a kernel and local linear regression
-
-```{r, fig.height = 4, fig.align='center', fig.width=8, results='hide', message=FALSE}
-set.seed(1234)
-trueFunction <- function(x) sin(x) + 1/sqrt(x)
-x = runif(100, 0, 2*pi)
-x = seq(min(x), max(x), length.out=100)
-y = trueFunction(x) + rnorm(100, 0, .75)
-par(mar=c(5,4,0,0))
-plot(x, y, pch=19, bty='n', las=1, cex.lab=1, cex.axis=1)
-curve(trueFunction(x), 0, 2*pi, col=2, lwd=3, add=TRUE)
-library(np)
-kern = npreg(y~x)
-loclin = npreg(y~x, regtype='ll')
-lines(x, fitted(kern), col=3, lwd=2)
-lines(x, fitted(loclin), col=4, lwd=2)
-```
 
 
 ## What's the Oracle?
@@ -176,41 +146,7 @@ lines(x, fitted(loclin), col=4, lwd=2)
 * In statistics, we talk about Oracles a lot, usually as a way of comparing a procedure we cook up for estimating something to the answers the Oracle would have told us (the best possible, but unobtainable estimator).
 
 
-## What is Loess?
-
-* So kernel regressions are local constants, we then saw local linear regression which is quite similar.
-
-* Why stop there? The next term is squared things, then cubics, then...
-
-* Loess uses local polynomials (of some order) in a particular way (combining $k$-nearest neighbor regression with subsampling).
-
-* It is actually quite cool, but it's complexity makes it hard to deal with.
-
-* Theoretically, one can show that Kernels are optimal, so it's not really worth worrying too much about, but it can work well, and it doesn't require installing a package.
-
-* Here it is on my previous example
-
-```{r, eval=FALSE}
-ls = loess(y~x)
-lines(x, predict(ls), col=3, lwd=2)
-```
-
-```{r, fig.height = 4, fig.align='center', fig.width=8, results='hide', message=FALSE,echo=FALSE}
-set.seed(1234)
-trueFunction <- function(x) sin(x) + 1/sqrt(x)
-x = runif(100, 0, 2*pi)
-x = seq(min(x), max(x), length.out=100)
-y = trueFunction(x) + rnorm(100, 0, .75)
-par(mar=c(5,4,0,0))
-plot(x, y, pch=19, bty='n', las=1, cex.lab=1, cex.axis=1)
-curve(trueFunction(x), 0, 2*pi, col=2, lwd=3, add=TRUE)
-library(np)
-kern = npreg(y~x)
-ls = loess(y~x)
-lines(x, predict(ls), col=3, lwd=2)
-```
-
-## A big example (as promised)
+## A big example
 
 * This is a (slightly modified) portion of a real job interview.
 
@@ -368,35 +304,146 @@ lines(jobInt$x[xx],log(origBetas$weights)[xx],lwd=2,col=2)
 
 * This takes a bit more work to code up (Try it!)
 
+## Local linear vs. Kernels
 
-## Brief intro to Ch. 8
+* People often wonder whether to use local linear regression or Kernels.
 
-* This chapter is another way of fitting "smooth" curves for regression: splines.
+* Like with many things, there isn't really a cut-and-dried answer.
 
-* Splines are very nice, and they turn out to be __linear smoothers__: we can write 
+* Some practitioners prefer local linear regression.
 
+* It's main benefit is to correct "boundary bias".
+
+* Otherwise, not much different. 
+
+
+
+## Repeat of Ch. 4
+
+* We can estimate this easily with both a kernel and local linear regression
+
+```{r, fig.height = 4, fig.align='center', fig.width=8, results='hide', message=FALSE}
+set.seed(1234)
+trueFunction <- function(x) sin(x) + 1/sqrt(x)
+x = runif(100, 0, 2*pi)
+x = seq(min(x), max(x), length.out=100)
+y = trueFunction(x) + rnorm(100, 0, .75)
+par(mar=c(5,4,0,0))
+plot(x, y, pch=19, bty='n', las=1, cex.lab=1, cex.axis=1)
+curve(trueFunction(x), 0, 2*pi, col=2, lwd=3, add=TRUE)
+library(np)
+kern = npreg(y~x)
+loclin = npreg(y~x, regtype='ll')
+lines(x, fitted(kern), col=3, lwd=2)
+lines(x, fitted(loclin), col=4, lwd=2)
+```
+
+
+## What is Loess?
+
+* So kernel regressions are local constants, we then saw local linear regression which is quite similar.
+
+* Why stop there? The next term is squared things, then cubics, then...
+
+* Loess uses local polynomials (of some order) in a particular way (combining $k$-nearest neighbor regression with subsampling).
+
+* It is actually quite cool, but it's complexity makes it hard to deal with.
+
+* Theoretically, one can show that Kernels are optimal, so it's not really worth worrying too much about, but it can work well, and it doesn't require installing a package.
+
+* Here it is on my previous example
+
+```{r, eval=FALSE}
+ls = loess(y~x)
+lines(x, predict(ls), col=3, lwd=2)
+```
+
+```{r, fig.height = 4, fig.align='center', fig.width=8, results='hide', message=FALSE,echo=FALSE}
+set.seed(1234)
+trueFunction <- function(x) sin(x) + 1/sqrt(x)
+x = runif(100, 0, 2*pi)
+x = seq(min(x), max(x), length.out=100)
+y = trueFunction(x) + rnorm(100, 0, .75)
+par(mar=c(5,4,0,0))
+plot(x, y, pch=19, bty='n', las=1, cex.lab=1, cex.axis=1)
+curve(trueFunction(x), 0, 2*pi, col=2, lwd=3, add=TRUE)
+library(np)
+kern = npreg(y~x)
+ls = loess(y~x)
+lines(x, predict(ls), col=3, lwd=2)
+```
+
+
+## Chapter 9 intro
+
+* Here we introduce the concept of GAMs ( __G__ eneralized __A__ dditive __M__ odels)
+
+* The basic idea is to imagine that the response is the sum of some functions of the predictors:
 \[
-\hat{Y} = WY.
+\Expect{Y_i \given X_i=x_i} = \alpha + f_1(x_{i1})+\cdots+f_p(x_{ip}).
 \]
 
-* Splines are given by solving
-
+* Note that OLS __is__ a GAM (take $f_j(x_{ij})=\beta_j x_{ij}$):
 \[
-\hat{\mu}_{\lambda} = \argmin{m} \sum_{i=1}^n (y_i - m(x_i))^2 + \lambda \int dx (m''(x))^2.
+\Expect{Y_i \given X_i=x_i} = \alpha + \beta_1 x_{i1})+\cdots+\beta_p x_{ip}.
 \]
 
-* The first half you know: it's the MSE
+* The algorithm for fitting these things is called "backfitting":
+    
+    1. Center $Y$ and $X$.
+    2. Hold $f_k$ for all $k\neq j$ fixed, and regress $f_j$ on the partial residuals using your favorite smoother.
+    3. Repeat for $1\leq j\leq p$.
+    4. Repeat steps 2 and 3 until the estimated functions "stop moving" (iterate)
+    5. Return the results.
+    
+## Results
 
-* The second half __penalizes__ the second derivative of $m$.
+* We're not going to try to code this ourselves (though it's not hard and good practice).
 
-* Second derivatives measure the curvature of a function, the smaller, the smoother.
+* There are two `R` packages that do this for us. I find `mgcv` easier.
 
-* With Kernels, we used the bandwidth to control the smoothness, here $\lambda$ controls it directly.
+* Let's look at a small example.
 
-## Some notes
+```{r, fig.align='center',fig.width=10,fig.height=4,message=FALSE}
+if (!is.element("mgcv", installed.packages()[,1]) ) install.packages("mgcv") # installs if it isn't already
+library(mgcv)
+set.seed(03-07-2016)
+n = 500
+x1 = runif(n, 0, 2*pi)
+x2 = runif(n)
+y = 5 + 2*sin(x1) + 8*sqrt(x2)+rnorm(n,sd=.5)
+```
 
-* Of course we choose $\lambda$ with CV (or GCV)
 
-* Sorry, there is not a good reason (that I know) to prefer splines over Kernels or vice-versa.
+## More plots
 
-* Skip 8.6 (or read it very lightly, and don't ask me questions about it)
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+plot(x1, y, col=2, pch=19, bty='n', las=1)
+plot(x2, y, col=3, pch=19, bty='n', las=1)
+```
+
+## Small example
+
+This just fits the linear model.
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+df = data.frame(y, x1, x2)
+ex = gam(y~x1+x2, data=df)
+summary(ex)
+plot(residuals(ex),fitted(ex), bty='n', las=1, pch=19, col=4)
+```
+
+## Smoothing
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+ex.smooth = gam(y~s(x1)+s(x2), data=df) # uses splines with GCV on each xi
+coefficients(ex.smooth) # still produces something
+plot(ex.smooth, pages = 1, scale=0, shade=TRUE, resid=TRUE, se=2, bty='n', las=1)
+```
+
+## Residuals vs. fitted
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+plot(residuals(ex.smooth), fitted(ex.smooth), bty='n', las=1, pch=19, col=4)
+```
