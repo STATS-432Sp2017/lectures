@@ -57,9 +57,9 @@ Then $\hat{\beta}$ has the smallest variance of all possible unbiased estimators
 
 * So what does WLS do? 
 
-    1. It __is__ optimal, in the sense of G-M, if $\Var{\epsilon_i}=\sigma^2(x_i)$.
+    1. It __is__ optimal, in the sense of G-M, if $\Var{\epsilon_i}=\sigma^2_i$.
     2. You've already used it (see next slide).
-    3. What if you want to predict $Y_i$ which have other structures like $y_i \in \{0,1\}$? The new estimators (often called GLS for generalized least squares) are special cases of WLS (logistic regression is one example we are building to).
+    3. What if you want to predict $Y_i$ which have other structures like $y_i \in \{0,1\}$? The algorithms for the new estimators (often called GLS for generalized least squares) use WLS (logistic regression is one example we are building to).
     
 ## You already used WLS
 
@@ -97,7 +97,7 @@ This is locally constant regression.
 
 * Suppose you __know__ the following:
     
-    1. $y_i = \beta_0 + \beta_1 x_i + \epsilon_i$.
+    1. $Y_i = \beta_0 + \beta_1 X_i + \epsilon_i$.
     2. You know $\beta_0=3$ and $\beta_1=2$.
     3. $\Expect{\epsilon_i} = 0$
     4. $\Var{\epsilon_i} = \sigma^2(x_i)$ ($\sigma^2(\cdot)$ is a function).
