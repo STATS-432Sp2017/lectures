@@ -3,8 +3,8 @@ title: "Chapter 9"
 author: "DJM"
 date: "7 March 2017"
 output:
-  slidy_presentation: default
   pdf_document: default
+  slidy_presentation: default
 ---
 
 \newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
@@ -30,7 +30,7 @@ library(knitr)
 # - Don't clutter R output with messages or warnings (message, warning)
   # This _will_ leave error messages showing up in the knitted report
 opts_chunk$set(message=FALSE, warning=FALSE, fig.align='center',fig.width=10,
-               fig.height=4)
+               fig.height=4,cache=TRUE, autodep=TRUE)
 ```
 
 
@@ -58,16 +58,17 @@ opts_chunk$set(message=FALSE, warning=FALSE, fig.align='center',fig.width=10,
     
 ## Results
 
-* We're not going to try to code this ourselves (though it's not hard and good practice).
+* We will code it next time.
 
 * There are two `R` packages that do this for us. I find `mgcv` easier.
 
 * Let's look at a small example.
 
 ```{r, fig.align='center',fig.width=10,fig.height=4,message=FALSE}
-if (!is.element("mgcv", installed.packages()[,1]) ) install.packages("mgcv") # installs if it isn't already
+if (!is.element("mgcv", installed.packages()[,1]) ) install.packages("mgcv") 
+    # installs if it isn't already
 library(mgcv)
-set.seed(03-07-2016)
+set.seed(03-07-2017)
 n = 500
 x1 = runif(n, 0, 2*pi)
 x2 = runif(n)
@@ -75,7 +76,7 @@ y = 5 + 2*sin(x1) + 8*sqrt(x2)+rnorm(n,sd=.5)
 ```
 
 
-## More plots
+## Some plots
 
 
 ```{r, fig.align='center',fig.width=10,fig.height=4}
@@ -107,6 +108,22 @@ plot(ex.smooth, pages = 1, scale=0, shade=TRUE, resid=TRUE, se=2, bty='n', las=1
 ```{r, fig.align='center',fig.width=10,fig.height=4}
 plot(residuals(ex.smooth), fitted(ex.smooth), bty='n', las=1, pch=19, col=4)
 ```
+
+## Last version
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+ex.toosmooth = gam(y~s(x1,x2), data=df) # uses splines with GCV on each xi
+coefficients(ex.toosmooth) # still produces something
+plot(ex.toosmooth, pages = 1, scale=0, shade=TRUE, resid=TRUE, se=2, bty='n', las=1)
+```
+
+## Residuals vs. fitted
+
+```{r, fig.align='center',fig.width=10,fig.height=4}
+plot(residuals(ex.toosmooth), fitted(ex.toosmooth), bty='n', las=1, pch=19, col=4)
+points(residuals(ex.smooth),fitted(ex.smooth),col=2)
+```
+
 
 ## Redoing the example in the text
 
