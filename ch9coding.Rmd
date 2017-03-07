@@ -1,0 +1,87 @@
+---
+title: "Backfitting"
+author: "DJM"
+date: "11 March 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+## Writing functions
+
+```{r}
+backfitlm <- function(y, X, max.iter=100, tol=1e-6){
+  # This function performs linear regression by "backfitting" 
+  # Inputs: y - the response
+  #         X - the design matrix (a column of 1's gives an intercept, else none)
+  #         max.iter - the maximum number of loops through the predictors (default to 100)
+  #         tol - if the mse changes by less than this, terminate (default to 1e-6)
+  p = ifelse(is.matrix(X), ncol(X), 1) # how many covariates?
+  n = length(y) # how many observations
+  bhat = double(p) # create a vector for our estimated coefficients (all zeros now)
+  preds = matrix(0, n, p) # a matrix to hold the partial predictions of each covariate
+  iter = 1 # initialize our iteration
+  mse = 1e35 # initialize the MSE to something big
+  conv = FALSE # initialize the convergence check to FALSE
+  while(!conv && (iter < max.iter)){ # enter the loop, check conditions (note && not &)
+    iter = iter + 1 # update the iteration count
+    for(j in 1:p){ # loop over all predictors
+      pres = y-rowSums(preds[,-j]) # partial residuals (ignoring current predictor)
+      mod = lm(pres~X[,j]-1) # regress current predictor on partial residuals, no intercept
+      bhat[j] = coef(mod) # get out the single coefficient
+      preds[,j] = fitted(mod) # update the predictions from this column
+    }
+    msenew = sqrt(mean((y - rowSums(preds)))^2) # get the updated MSE after a pass
+    conv = (abs(mse-msenew)<tol) # check how different our MSE was from previous
+    mse = msenew # save the new MSE
+  }
+  return(bhat) # return our coefficients
+}
+```
+
+
+* Generate a design matrix $X$ with 100 observations and $p=10$ covariates and a response variable $y$ using a linear model. Test
+  the (now complete) `backfitlm` on this data and compare the
+  results to `lm`. Should there be an intercept in either version?
+```{r}
+set.seed(04-07-2016)
+n = 100
+p = 10
+X = matrix(rnorm(n*p), n)
+b = 10:1 # true betas
+y = X %*% b + rnorm(n)
+bhat.lm = coef(lm(y~X-1)) # no intercept
+bhat.bf = backfitlm(y,X) # also no intercept
+round(rbind(bhat.lm,bhat.bf),3)
+```
+Notice that the estimated coefficients are exactly the same. I didn't generate data with an intercept, so I didn't let `lm` estimate one. You could have though. You just need to include a column of ones in the `X` matrix.
+
+* Extra credit (10 points): This will not work the same as `gam` because of the choice of smoothing parameters. I've removed all the comments except for places where I changed something.
+```{r}
+backfitspline <- function(y, X, max.iter=100, tol=1e-6){
+  # This function estimates additive models by "backfitting" 
+  # Inputs: X - the design matrix (not possible to use an intercept without further changes)
+  p = ifelse(is.matrix(X), ncol(X), 1)
+  n = length(y)
+  smat = matrix(0, n, p) # need a matrix for partial predictions rather than coefficients
+  preds = matrix(0, n, p)
+  iter = 1
+  mse = 1e35
+  conv = FALSE
+  while(!conv && (iter < max.iter)){
+    iter = iter + 1 
+    for(j in 1:p){ 
+      pres = y-rowSums(preds[,-j]) 
+      mod = gam(pres~s(X[,j])) # regress current predictor on partial residuals, using gam is easy
+      smat[,j] = predict(mod) # get out the partial predictions
+      preds[,j] = fitted(mod)
+    }
+    msenew = sqrt(mean((y - rowSums(preds)))^2) 
+    conv = (abs(mse-msenew)<tol)
+    mse = msenew
+  }
+  return(smat) # return our partial predictors
+}
+```
+If I test this on my (linear) data from before, I get basically linear predictors, with pretty accurate coefficient estimates. I haven't tried it on anything more complicated. Choosing smoothing parameters is an important issue which is ignored in this version.
