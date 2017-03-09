@@ -1,0 +1,45 @@
+---
+title: "Algorithms"
+author: "DJM"
+date: "11 March 2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+## Algorithms
+
+```{r}
+swap <- function(A, i, j){
+  val = A[i]
+  A[i] = A[j]
+  A[j] = val
+  return(A)
+}
+
+kthOrderStat <- function(x, k){
+  # This time, we're not returning the whole vector, 
+  # just a single number in the kth sorted position
+  if((n <- length(x)) == 1) return(x) # change this line, if the length is 1, 
+                                      # we've found it
+  pivot = x[n]
+  i = 0
+  for(j in 1:(n-1)){
+    if(x[j] <= pivot){
+      i = i+1
+      x = swap(x, i, j)
+    }
+  }
+  i = i+1
+  x = swap(x, i, n)
+  if(k == i) return(x[i]) # if our pivot spot is k, we've found it and we're done
+  if(k < i){ # if k is smaller than the pivot, then recourse on the small half
+      kthOrderStat(x[1:(i-1)], k) # look for the kth smallest value in the small half
+  }else{ # if k is larger than the pivot, then recourse on the big half
+      kthOrderStat(x[(i+1):n], k-i) # throw away the bottom i values, and look for 
+                                    # the (k-i)th smallest value in the large half
+  }
+}
+kthOrderStat(c(5,6,7,1,2,0,8,9,10,3), 8)
+```
