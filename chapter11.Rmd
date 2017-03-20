@@ -1,0 +1,538 @@
+---
+title: "Chapter 11"
+author: "DJM"
+date: "21 March 2016"
+output:
+  slidy_presentation: default
+  pdf_document: default
+---
+
+
+\newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
+\newcommand{\Var}[1]{\mathbb{V}\left[ #1 \right]}
+\newcommand{\Cov}[2]{\mathrm{Cov}\left[#1,\ #2\right]}
+\newcommand{\given}{\ \vert\ }
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\tr}[1]{\mbox{tr}(#1)}
+
+
+
+## Chapter 11
+
+```{r setup, echo=FALSE}
+# Need the knitr package to set chunk options
+library(knitr)
+# Set knitr options for knitting code into the report:
+# - Don't print out code (echo)
+# - Save results so that code blocks aren't re-run unless code changes (cache),
+# _or_ a relevant earlier code block changed (autodep), but don't re-run if the
+# only thing that changed was the comments (cache.comments)
+# - Don't clutter R output with messages or warnings (message, warning)
+  # This _will_ leave error messages showing up in the knitted report
+opts_chunk$set(message=FALSE, warning=FALSE, fig.align='center',fig.width=10,
+               fig.height=6, cache=TRUE, autodep = TRUE)
+```
+
+* Here we finally learn about __logistic regression__.
+
+* This is one of _many_ "classifiers", ways to predict binary outcomes.
+
+* We've waited so long to introduce it for two reasons: 
+    
+    1. The algorithm for estimating the coefficients is weighted least squares
+    2. It is easy to do as a GAM, so learn all this just once
+    
+## What is logistic regression
+
+* Let $Y$ be the outcome of a random (unfair) coin with $P(heads)=p$, then the pmf of $Y$ is
+\[
+P(Y=y; p) = p^y (1-p)^{1-y}.
+\]
+
+* This has $\Expect{Y}=p$ and $\Var{Y} = p(1-p)$.
+
+* Now, $Y=1$ or $Y=0$, and linear models don't predict discrete things very well, so let's try to predict $\Expect{Y}=p$ instead.
+
+* If $P(heads)=p=x^\top \beta$, then
+\[
+P(Y=y; p) = p^y (1-p)^{1-y} = (x^\top\beta)^y (1-x^\top\beta)^{1-y}
+\]
+which doesn't help us solve for $\beta$.
+
+## Why this?
+
+
+- For OLS, we usually assume that $Y$ is __real valued__.
+
+* This means that $Y-X^\top\beta=\epsilon$ is real valued
+
+* We spent a lot of time examining the residuals of the linear model
+
+    1. Are they symmetric?
+    2. Do they have mean zero? For all $x$?
+    3. Does the variance seem constant across $x$ values?
+    4. Does the distribution of the residuals appear normal?
+    
+* We looked at ways of __transforming__ $Y$ or $X$ to make this happen (take logs, add polynomials, use smoothers, interactions, etc.)
+
+* If $Y$ takes values 0 or 1, and we predict 0 or 1, then the residuals must be either 0 or 1 (can't be normal for sure).
+
+* Logistic regression is a __transformation__ that helps us get symmetric, real valued, potentially normal residuals:
+    
+    * We don't predict $Y$, we predict $\textrm{logit}(Y) = \log\frac{P(Y=1)}{1-P(Y=1)} = \log\frac{P(Y=1)}{P(Y=0)}$.
+    * Unfortunately, we don't __see__ $P(Y=1)$, just $Y$, so we let the computer do some numerics
+
+
+## Estimation
+
+* This is easy, use `glm(y~x1+x2, family=binomial)`
+
+* The numerics are also easy and detailed in the text.
+
+* If there's time, we'll code it up next time.
+
+## Let's look at a simulation (bivariate $x$)
+
+```{r}
+logit <- function(z){ # can this take in any z?
+  log(z/(1-z))
+}
+ilogit <- function(z){ # what about this one?
+  exp(z)/(1+exp(z))
+}
+sim.logistic <- function(x, beta.0, beta, bind=FALSE) {
+  linear.parts <- beta.0+(x%*%beta)
+  y <- rbinom(nrow(x), size=1, prob=ilogit(linear.parts))
+  if (bind) { return(cbind(x,y)) } else { return(y) }
+}
+
+plot.logistic.sim <- function(x, beta.0, beta, n.grid=50, labcex=1, col="green", ...) {
+  grid.seq <- seq(from=-1,to=1,length.out=n.grid)
+  plot.grid <- as.matrix(expand.grid(grid.seq,grid.seq))
+  p <- matrix(ilogit(beta.0 + (plot.grid %*% beta )),nrow=n.grid)
+  contour(x=grid.seq,y=grid.seq,z=p, xlab=expression(x[1]), zlim=c(0,1),
+          ylab=expression(x[2]),main="",labcex=labcex,col=col)
+  y <- sim.logistic(x,beta.0,beta,bind=FALSE)
+  points(x[,1],x[,2],pch=ifelse(y==1,"+","-"),col=ifelse(y==1,"blue","red"))
+  invisible(y)
+}
+```
+
+## Plotting
+
+```{r, fig.height=10}
+x <- matrix(runif(n=50*2,min=-1,max=1),ncol=2)
+par(mfrow=c(2,2))
+plot.logistic.sim(x,beta.0=-0.1,beta=c(-0.2,0.2))
+y.1 <- plot.logistic.sim(x,beta.0=-0.5,beta=c(-1,1)) # for use in a minute
+plot.logistic.sim(x,beta.0=-2.5,beta=c(-5,5))
+plot.logistic.sim(x,beta.0=-2.5e2,beta=c(-5e2,5e2))
+```
+
+## Estimating
+
+```{r}
+df <- data.frame(y=y.1, x1=x[,1], x2=x[,2])
+logr <- glm(y ~ x1 + x2, data=df, family=binomial)
+summary(logr,digits=2,signif.stars=FALSE)
+table(ifelse(fitted(logr)<0.5, 0, 1), df$y)
+```
+
+## A GAM
+
+```{r}
+library(mgcv)
+(gam.1 <- gam(y~s(x1)+s(x2), data=df, family=binomial))
+plot(gam.1,residuals=TRUE, shade=TRUE,pages=1)
+```
+
+
+## Real data example
+
+This dataset comes from a study investigating the causes of civil wars. 
+
+Every row of the data represents a combination of a country and a five-year interval: for example, the first row is `Afghanistan, 1960`, which really means Afghanistan, 1960-1965. 
+
+* The variables are:
+
+    1. Country name
+    2. The year
+    3. In indicator (1 if yes, 0 if no) for whether a civil war __began__ during the period. `NA` means an ongoing war.
+    4. A measure of dependence of the country's dependence on commodity exports.
+    4. % of males enrolled in secondary school (occasionally exceeds 100 for unknown reasons)
+    5. Annual GDP growth rate
+    6. A measure of geographic concentration of the population (0 if evenly spread, 1 if everyone lives in one city).
+    7. The number of months since the country's last war (or WWII)
+    8. $\log($population$)$
+    9. An index measuring how fractured the country is along ethnic/religious lines
+    10. An index of ethnic dominance (does one group run the country?)
+    
+> Goal: Predict civil war starts. Find important variables for making such predictions.
+
+## Estimate a model
+
+```{r}
+# Read in some data
+ch <- read.csv("http://www.stat.cmu.edu/~cshalizi/uADA/15/hw/06/ch.csv")
+ch <- ch[,-1] # first column is just row numbers
+ch.clean <- na.omit(ch) # make a version excluding missing values (for later)
+lr.ch <- glm(start ~ . -country -year +I(exports^2), data=ch, family="binomial")
+```
+
+* Why exclude `country` and `year`?
+* How should I decide if I need the quadratic term?
+
+## Examine the model
+
+```{r}
+par(mfrow=c(2,2), oma=c(0,0,2,0))
+plot(lr.ch, panel=panel.smooth)
+```
+
+* What am I looking at here?
+
+## Coefficients and SEs
+
+```{r}
+fortable1 <- summary(lr.ch)$coefficients
+kable(fortable1, digits=3)
+```
+
+* Which are significant?
+* What is the interpretation of the coefficient on `schooling`?
+* What is the interpretation of the coefficient on `exports^2`?
+* Remember that these are $\log\frac{P(Y=1)}{P(Y=0)}$.
+
+
+## Making predictions
+
+
+* What is the model's predicted probability for a civil war in India in the period beginning 1975?
+
+```{r}
+india1975 <- ch[(ch$country=="India") & (ch$year==1975),]
+signif(p.india75 <- predict(lr.ch,type="response",newdata=india1975),3)
+```
+
+* What probability would it predict for a country just like India in 1975, except that its male secondary school enrollment rate was 30 points higher?
+
+```{r}
+india1975.sch <- india1975
+india1975.sch$schooling <- india1975$schooling+30
+signif(p.india75sch <- predict(lr.ch,type="response",newdata=india1975.sch),3)
+```
+
+* What probability would it predict for a country just like India in 1975, except that the ratio of commodity exports to GDP was $0.1$ higher?
+
+```{r}
+india1975.exp <- india1975
+india1975.exp$exports <- india1975$exports+0.1
+signif(p.india75exp <- predict(lr.ch, type="response", newdata=india1975.exp),3)
+```
+
+__Note:__ No civil war began in India in 1975-1980.
+
+* What about Nigeria in 1965 (code hidden)?
+
+```{r, echo=FALSE}
+nigeria1965 <- ch[(ch$country=="Nigeria") & (ch$year==1965),]
+signif(p.nigeria65 <- predict(lr.ch, type="response", newdata=nigeria1965),3)
+nigeria1965.sch <- nigeria1965
+nigeria1965.sch$schooling <- nigeria1965$schooling+30
+signif(p.nigeria65sch <- predict(lr.ch, type="response", newdata=nigeria1965.sch),3)
+nigeria1965.exp <- nigeria1965
+nigeria1965.exp$exports <- nigeria1965$exports+0.1
+signif(p.nigeria65exp <- predict(lr.ch,type="response",newdata=nigeria1965.exp),3)
+```
+
+__Note:__ A civil war began in Nigeria in 1967 (the Biafran War)
+
+
+## What is different?
+
+* In the previous slide, we changed the same predictor variables by the same amounts:
+    
+* The changes in the predicted probablities for India at 1975 are `r signif(c(p.india75sch, p.india75exp) - p.india75,3)` while for Nigeria in 1965 the change is `r signif(c(p.nigeria65sch, p.nigeria65exp) - p.nigeria65,3)`. 
+
+* In a linear regression model, changing the same predictor variable by the same
+amount always produces the same change in the predictor.  (This is the basis
+for the formula about how "a one unit change in $x_j$ leads to a change of
+$\beta_j$ units in the expected response.")  This is not happening here.
+
+
+* To see why it does not happen, change one of the predictor variables, say
+$x_1$, by $a$ units, and look at the change in the predicted probability:
+
+\[
+\frac{\exp{(\beta_0+\beta_1 (x_1+a)+\mathbf{\beta_{rest} x})}}{1+\exp{(\beta_0+\beta_1(x_1+a)+\mathbf{\beta_{rest} x})}}-\frac{\exp{(\beta_0+\beta_1 x_1+\mathbf{\beta_{rest} x})}}{1+\exp{(\beta_0+\beta_1 x_1+\mathbf{\beta_{rest} x))}}}
+\]
+
+* If we define $c=\exp{(\beta_0+\beta_1 x_1+\mathbf{\beta_{rest} x})}$, then the difference becomes
+\[
+\frac{c\times \exp{(\beta_1 a)}}{1+c\times \exp{(\beta_1
+  a)}}-\frac{c}{1+c}
+\]
+
+* The change depends on the current or baseline values of all the predictor
+variables, not just the amount by which $x_1$ is changed.  This is part of what
+it means for logistic regression to be a non-linear model.
+
+* Notice, however, that changing the same predictor variable by the same amount
+will always change the __log odds__ equally.
+
+
+## Confusion matrix
+
+* How well is our classifier working?
+
+```{r}
+pred.prob <- predict(lr.ch, type='response') # use later, without the flag, returns log-odds
+(confusion <- table(ch.clean$start, as.integer(pred.prob>0.5), dnn=c('reality','prediction')))
+```
+
+* What fraction of predictions are correct?
+
+```{r}
+signif(sum(diag(confusion))/sum(confusion),3)
+```
+
+* Consider a "foolish pundit" who always predicts __no war__. How many predictions does he get right on the whole dataset? 
+
+```{r}
+signif(mean(ch$start==0, na.rm=TRUE),3)
+```
+
+* What about if we restrict to when the regression makes a prediction?
+
+```{r}
+signif(mean(ch.clean$start==0),3)
+```
+
+## Calibration
+
+* To check whether a model is properly calibrated, we want to know whether the probability reflects reality. 
+
+* For example, if we look back at a meteorologist's forecasts for rain, on those days s/he said "20%" chance, did it rain 20% of the time?
+
+* We can alter the code from the notes (slightly):
+
+```{r}
+frequency.vs.probability <- function(p.lower, p.increment=0.01, # changed this
+                                     model, events) {
+    fitted.probs <- fitted(model)
+    indices <- (fitted.probs >= p.lower) & (fitted.probs < p.lower+p.increment) # a change here, too
+    ave.prob <- mean(fitted.probs[indices])
+    frequency <- mean(events[indices])
+    se <- sqrt(ave.prob * (1 - ave.prob)/sum(indices))
+    return(c(frequency = frequency, ave.prob = ave.prob, se = se))
+}
+f.vs.p <- sapply(0:6/10,frequency.vs.probability, p.increment=0.1,
+                 model=lr.ch, events=ch.clean$start)
+f.vs.p <- data.frame(frequency=unlist(f.vs.p["frequency",]),
+                     ave.prob=unlist(f.vs.p["ave.prob",]),
+                     se=unlist(f.vs.p["se",]))
+plot(frequency~ave.prob, data=f.vs.p, xlab="Predicted probabilities",
+     ylab="Observed frequencies", xlim=c(0,1), ylim=c(0,1))
+rug(fitted(lr.ch),col="lightgrey")
+abline(0,1,col="blue")
+segments(x0=f.vs.p$ave.prob,y0=f.vs.p$ave.prob-1.96*f.vs.p$se,
+  y1=f.vs.p$ave.prob+1.96*f.vs.p$se)
+```
+
+* Calibration is not great, especially at the high-probability end.
+
+## Let's do a GAM
+
+```{r, fig.height=10}
+library(mgcv)
+gam.ch <- gam(start~s(exports)+s(schooling)+s(growth)+s(peace)
+           +s(concentration)+s(lnpop)+s(fractionalization)+dominance, # dominance is binary (no smoothing)
+           data=ch, family="binomial")
+plot(gam.ch, scale=0, se=2, pages=1, shade=TRUE)
+```
+
+## GAM confusion
+
+```{r}
+pred.prob.gam <- predict(gam.ch, type="response")
+(confusion.gam <- table(ch.clean$start,as.integer(pred.prob.gam>0.5), dnn=c("reality", "prediction")))
+```
+
+* We can calculate the percentage of correct predictions:
+
+```{r}
+signif(sum(diag(confusion.gam))/sum(confusion.gam),3)
+```
+
+* This is better than the `glm` (one more correct prediction) but not as good as the pundit.
+
+## GAM calibration
+
+```{r}
+f.vs.p <- sapply(0:8/10,frequency.vs.probability,p.increment=0.1,
+                 model=gam.ch, events=ch.clean$start)
+f.vs.p <- data.frame(frequency=unlist(f.vs.p["frequency",]),
+                     ave.prob=unlist(f.vs.p["ave.prob",]),
+                     se=unlist(f.vs.p["se",]))
+plot(frequency~ave.prob, data=f.vs.p, xlab="Predicted probabilities",
+     ylab="Observed frequencies", xlim=c(0,1), ylim=c(0,1))
+rug(fitted(lr.ch),col="lightgrey")
+abline(0,1,col="blue")
+segments(x0=f.vs.p$ave.prob,y0=f.vs.p$ave.prob-1.96*f.vs.p$se,
+  y1=f.vs.p$ave.prob+1.96*f.vs.p$se)
+```
+
+* This is calibrated a bit better, maybe
+
+
+## Testing logistic specifications
+
+* Suppose we want to know whether our logistic regression is "good enough".
+
+* We can try to test the null hypothesis, $$H_0: \mbox{logit generated the data}$$ against the alternative $$H_1: \mbox{we need a GAM}$$
+
+* With "nice" hypothesis tests, we find a test statistic (like the $t$-test), and we know it's distribution under the null.
+
+* Then we compare the observed test statistic to that distribution.
+
+## Example 
+
+* We observe $n=100$ data points $x_1,\ldots,x_n$
+
+* Null hypothesis: $X_i \sim\mbox{N}(10, 1)$
+
+* Alternative hypothesis: $X\sim\mbox{N}(\mu_0, 1)$, $\mu_0>10$
+
+* Test statistic: $Z=\sqrt{100}(\bar{X}_{100} - 10)/1 = 10(\bar{X}_{100}-10)$
+
+* Distribution of test statistic (if the null is true): $Z\sim \mbox{N}(0,1)$
+
+* Procedure: calculate $z$, find the $p$-value by using the known distribution
+
+## Example in `R`
+
+```{r}
+set.seed(04072016)
+n = 100
+mu = 10
+x = rnorm(n, mean=mu+.1, sd=1) # get some data
+z = sqrt(n)*(mean(x)-mu) # calculate the test statistic
+curve(dnorm(x), -3, 3, las=1, bty='n') # the density of the test statistic under the null
+abline(v=z, col=2) # the statistic we observed
+(pval = pnorm(z, lower.tail = FALSE)) # the probability of seeing data more extreme
+```
+
+## Example again
+
+* What if I don't know the distribution of the test statistic?
+
+* I can just generate lots of test statistics from the null hypothesis
+
+```{r}
+testStat <- function(n, mu){
+  x = rnorm(n, mu) # generate a new data set from the null
+  z = sqrt(n)*(mean(x)-mu) # calculate the test statistic
+  return(z)
+}
+testDist = replicate(1000, testStat(n, mu)) # generate 1000 test statistics
+plot(density(testDist),las=1, bty='n') # the simulated density of the test statistic
+abline(v=z, col=2) # the statistic we observed
+pval2 = mean(testDist>z) # the probability of seeing data more extreme
+c(pval, pval2)
+```
+
+## The same idea works for any hypothesis test
+
+* I have a new statistic: $NS = \frac{1}{n}\sum \sin\left(\frac{|x_i-\overline{x}|}{2\pi}\right)$
+
+* I don't know it's distribution. I want to test the null $H_0: NS=1/2\pi$ against the alternative $H_1: NS<1/2\pi$.
+
+```{r}
+testStatNS <- function(n){
+  x = rnorm(n)
+  z = mean(sin(abs(x-mean(x))/(2*pi)))
+  return(z)
+}
+testDistNS = replicate(1000, testStatNS(n))
+plot(density(testDistNS), las=1, bty='n')
+abline(v=1/(2*pi), col=2)
+(pvalNS = 1-mean(testDistNS<1/(2*pi)))
+```
+
+## Logistic regression specification testing
+
+* The appropriate test statistic to look at is the __deviance__
+
+* Deviance is much like using the RSS and doing $F$-tests.
+
+* The deviance is automatically calculated by `glm` and `gam` using `mod$deviance` where `mod` is the fitted model.
+
+## Lower deviance
+
+* Just like comparing RSS in linear regressions, a GAM will always have lower deviance than a logistic regression.
+
+* It has more degrees of freedom and "nests" the logistic regression. 
+
+* For nested models, we used $F$-tests (from `anova`) to decide whether that improvement is significant.
+
+* Then we knew the distribution under the null hypothesis, here we don't.
+
+* So we use our simulation procedure to perform the test.
+
+## Helper functions
+
+```{r}
+simulate.from.logr <- function(df, mdl) { # altered to work with any glm output
+  probs <- predict(mdl, type="response") # don't want newdata argument due to factors
+  newy <- rbinom(n=nrow(df), size=1,prob=probs)
+  df[[names(mdl$model)[1]]] <- newy # the names part, gets the response from the df
+  return(df)
+}
+
+# Simulate from an estimated logistic model, and refit both the logistic
+  # regression and a generalized additive model
+# Better code than in the textbook
+# Inputs: data frame with covariates (df), fitted logistic model (logr), fitted gam (gamr)
+# Output: difference in deviances
+delta.deviance.sim <- function (df, logr, gamr) {
+  sim.df <- simulate.from.logr(df, logr)
+  GLM.dev <- glm(logr$formula,data=sim.df,family="binomial")$deviance # used formulas instead
+  GAM.dev <- gam(gamr$formula,data=sim.df,family="binomial")$deviance
+  return(GLM.dev - GAM.dev)
+}
+```
+
+## Simulated data
+
+```{r}
+require(mgcv)
+n = 50
+p = 2
+x = matrix(runif(n*p,-1,1), n, p)
+y = plot.logistic.sim(x, -0.5, c(-1,1)) 
+df = data.frame(y, x) # check what the names in this df are!!
+logr = glm(y~X1+X2, data=df, family=binomial) # they are these.
+gamr = gam(y~s(X1)+s(X2), data=df, family=binomial)
+```
+
+## Do the test
+
+```{r}
+(delta.observed = logr$deviance-gamr$deviance)
+delta.dev.dist = replicate(100, delta.deviance.sim(df, logr, gamr))
+mean(delta.observed <= delta.dev.dist) # % of sims that fit better than what we saw
+plot(density(delta.dev.dist), las=1, bty='n')
+abline(v=delta.observed, col=2)
+```
+
+## Let's do our data from earlier
+
+```{r}
+obs.ch = lr.ch$deviance - gam.ch$deviance
+delta.ch.dist = replicate(100, delta.deviance.sim(ch, lr.ch, gam.ch))
+mean(obs.ch <= delta.ch.dist)
+plot(density(delta.ch.dist), las=1, bty='n')
+abline(v=obs.ch, col=2)
+```
