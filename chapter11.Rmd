@@ -108,7 +108,7 @@ sim.logistic <- function(x, beta.0, beta, bind=FALSE) {
   if (bind) { return(cbind(x,y)) } else { return(y) }
 }
 
-plot.logistic.sim <- function(x, beta.0, beta, n.grid=50, labcex=1, col="green", ...) {
+plot.logistic.sim <- function(x, beta.0, beta, n.grid=50, labcex=1, col="purple", ...) {
   grid.seq <- seq(from=-1,to=1,length.out=n.grid)
   plot.grid <- as.matrix(expand.grid(grid.seq,grid.seq))
   p <- matrix(ilogit(beta.0 + (plot.grid %*% beta )),nrow=n.grid)

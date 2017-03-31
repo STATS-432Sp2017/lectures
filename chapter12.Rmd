@@ -33,7 +33,7 @@ library(knitr)
 # - Don't clutter R output with messages or warnings (message, warning)
   # This _will_ leave error messages showing up in the knitted report
 opts_chunk$set(message=FALSE, warning=FALSE, fig.align='center',fig.width=8,
-               fig.height=4)
+               fig.height=4,cache=TRUE,autodep=TRUE)
 ```
 
 
@@ -180,10 +180,9 @@ irwls <- function(y, x, # input data, first column is intercept if desired
 ```{r}
 set.seed(04042017)
 n = 100
-p = 2
-b = seq(10,1,length=p)
-b0 = -2
-x = matrix(rnorm(n*p), nrow=n)
+b = c(2,-2)
+b0 = 0
+x = matrix(runif(n*2,-1,1), nrow=n)
 y.lm = b0 + x %*% b + rnorm(n)
 c(b0,b)
 coef(lm(y.lm~x))
@@ -192,12 +191,28 @@ irwls(y.lm,cbind(1,x))
 
 ## Testing, testing, testing...
 
-```{r, eval=FALSE}
+```{r logistic-attempt}
 ilogit <- function(z) exp(z)/(1+exp(z))
 y.logit = rbinom(n, 1, prob = ilogit(b0 + x %*% b))
-c(b0,b)
-coef(glm(y.logit~x))
-irwls(y.logit, cbind(1,x), invlink=ilogit, linkPrime=function(m) 1/(m*(1-m)), V=function(m) m*(1-m))
+(true.logit <- c(b0,b))
+(glm.logit <- coef(glm(y.logit~x,family = 'binomial')))
+(our.logit <- irwls(y.logit, cbind(1,x), invlink=ilogit, 
+                    linkPrime=function(m) 1/(m*(1-m)), V=function(m) m*(1-m)))
+```
+
+```{r logistic-plots}
+plot.logistic <- function(x, y, coeff, n.grid=50, labcex=1, col="purple", ...) {
+  grid.seq <- seq(from=-1,to=1,length.out=n.grid)
+  plot.grid <- as.matrix(expand.grid(grid.seq,grid.seq))
+  p <- matrix(ilogit(coeff[1] + (plot.grid %*% coeff[2:3] )),nrow=n.grid)
+  contour(x=grid.seq,y=grid.seq,z=p, xlab=expression(x[1]), zlim=c(0,1),
+          ylab=expression(x[2]),labcex=labcex,col=col,...)
+  points(x[,1],x[,2],pch=ifelse(y==1,"+","-"),col=ifelse(y==1,"blue","red"))
+}
+par(mfrow=c(1,3))
+plot.logistic(x,y.logit,true.logit,main='True coefs',col=1)
+plot.logistic(x,y.logit,glm.logit,main='GLM coefs')
+plot.logistic(x,y.logit,our.logit,main='Our coefs',col='darkgreen')
 ```
 
 
