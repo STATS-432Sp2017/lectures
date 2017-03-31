@@ -1,0 +1,428 @@
+---
+title: "Chapter 12"
+author: "DJM"
+date: "4 April 2016"
+output:
+  slidy_presentation: default
+  pdf_document: default
+---
+
+\newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
+\newcommand{\Var}[1]{\mathbb{V}\left[ #1 \right]}
+\newcommand{\Cov}[2]{\mathrm{Cov}\left[#1,\ #2\right]}
+\newcommand{\given}{\ \vert\ }
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\tr}[1]{\mbox{tr}(#1)}
+
+
+
+
+
+## Generalized linear models
+
+```{r setup, echo=FALSE}
+# Need the knitr package to set chunk options
+library(knitr)
+# Set knitr options for knitting code into the report:
+# - Don't print out code (echo)
+# - Save results so that code blocks aren't re-run unless code changes (cache),
+# _or_ a relevant earlier code block changed (autodep), but don't re-run if the
+# only thing that changed was the comments (cache.comments)
+# - Don't clutter R output with messages or warnings (message, warning)
+  # This _will_ leave error messages showing up in the knitted report
+opts_chunk$set(message=FALSE, warning=FALSE, fig.align='center',fig.width=8,
+               fig.height=4)
+```
+
+
+* Think back to the beginning of this class: we set out to model the __regression function__
+\[
+\mu(x) = \Expect{Y\given X=x}
+\]
+
+* We then showed how Ordinary Least Squares sets
+\[
+\mu(x) = \Expect{Y\given X=x} = \beta_0 + \beta^\top x
+\]
+
+* Generalized linear models "generalize" this idea
+
+## Transforming the response
+
+* A generalized linear model starts by trying to __transform__ the response $Y$
+
+* You've done this before to handle skewed distributions or other issues, but let's push through some math
+
+* Suppose we transform to $g(Y)$
+
+* Now, follow me along without justification (because I know where this goes), take a Taylor expansion to one term around $\mu(x)$:
+\[
+g(Y) \approx g(\mu(x)) + (Y-\mu(x))g'(\mu(x))
+\]
+
+* Now we've written $g(Y)$ in terms of our regression function $\mu(x)=\Expect{Y\given X=x}$
+
+* Let's make a new random variable $Z= g(\mu(x)) + (Y-\mu(x))g'(\mu(x))$
+
+
+## Let's generalize
+
+\[
+g(Y) \approx g(\mu(x)) + (Y-\mu(x))g'(\mu(x))
+\]
+
+* Let $g$ be any function and define
+\[
+\begin{aligned}
+\mu(x) &= \Expect{Y\given X=x}\\
+\eta(x) &= g(\mu(x))\\
+\epsilon(x) &= Y-\mu(x)
+\end{aligned}
+\]
+
+* Rather than assume $\mu(x) = \beta_0 + \beta^\top x$, we assume
+\[
+\eta(x) = g(\mu(x)) = \beta_0 + \beta^\top x
+\]
+
+* Terms
+
+    - $\eta$ is the __linear predictor__
+    - $g$ is called the __link function__
+    
+* Other bits
+
+    - $\epsilon(x) = Y - \mu(x)$ has mean 0 conditional on $X=x$
+    - $\Expect{Z\given X=x} = \Expect{g(\mu(x))} + 0 = g(\mu(x))$
+    - $\Var{Z\given X=x} = \Var{\eta(x)\given X=x} + \Var{(Y-\mu(x))g'(\mu(x))\given X=x} = 0 + (g'(\mu(x)))^2\Var{Y\given X=x}$
+
+## Why do this?
+
+* If $Y$ is binary (is either 0 or 1), than transforming $g(Y) = log\frac{Y}{1-Y}$ doesn't help
+
+* For that $g$, $g(Y) = \pm \infty$.
+
+* So, often, if we just look at $g(Y)$, we have issues
+
+* Instead we look at the Taylor expansion because it doesn't depend on $g(Y)$
+
+
+
+## Example: logistic regression
+
+\[
+\begin{aligned}
+\mu(x) &= P(Y=1\given X=x)\\
+g(m) &= \log\frac{m}{1-m}\\
+g(\mu(x)) &= \log\frac{P(Y=1\given X=x)}{1-P(Y=1\given X=x)}\\
+\Var{Y\given X=x} &= \mu(x)(1-\mu(x))\\
+(g'(x))^2 &= \left(\frac{d}{dx}\log\frac{x}{1-x}\right)^2 = \left(\frac{1}{x(1-x)}\right)^2
+\end{aligned}
+\]
+
+## Example: OLS
+
+\[
+\begin{aligned}
+\mu(x) &= \Expect{Y\given X=x}\\
+g(m) &= m\\
+g(\mu(x)) &= \Expect{Y\given X=x}\\
+\Var{Y\given X=x} &= \sigma^2\\
+(g'(x))^2 &= 1
+\end{aligned}
+\]
+
+## Estimation
+
+1. Get some data $(y_1,x_1),\ldots,(y_n,x_n)$, figure out the __link function__ $g$, and calculate $g'$ and $\Var{Y\given X=x}$. Now give some initial guesses for $\beta$ (say $\beta=\mathbf{0}$)
+
+2. Iterate until convergence:
+    
+    a. Calculate $\eta(x_i) = \beta^\top x_i$ and $\hat{\mu}(x_i) = g(\eta(x_i))$.
+    b. Find $z_i = \eta(x_i)+ (y_i - \hat{\mu}(x_i)) g'(\hat{\mu}(x_i))$.
+    c. Calculate the weights $w_i = [(g'(\hat{\mu}(x_i)))^2 \Var(\hat{\mu}(x_i))$.
+    d. Do weighted least squares of $z_i$ on $x_i$ with weights $w_i$. This gives a new $\beta$.
+    
+## R code
+
+```{r}
+irwls <- function(y, x, # input data, first column is intercept if desired
+                  invlink=function(m) m, # g^{-1}, defaults to "identity" (lm)
+                  linkPrime = function(m) rep(1,length(m)), # g', defaults to "identity"
+                  V = function(m) 1, # Variance function, defaults to "identity"
+                  maxit = 100, tol=1e-6) # control parameters
+{
+  n = length(y)
+  x = as.matrix(x) # make sure this is a matrix
+  p = ncol(x)
+  beta = double(p) # initialize coefficients
+  conv = FALSE # hasn't converged
+  iter = 1 # first iteration
+  while(!conv && (iter<maxit)){ # check loops
+    iter = iter + 1 # update first thing (so as not to forget)
+    eta = x %*% beta # eta
+    mu = invlink(eta) # mu
+    gp = linkPrime(mu) # evaluate g'(mu)
+    z = eta + (y - mu) * gp # effective transformed response
+    w = gp^2 * V(mu) # variance parameter
+    betaNew = coef(lm(z~x-1, weights=1/w)) # do the regression
+    conv = (mean((beta-betaNew)^2)<tol) # check if the betas are "moving"
+    beta = betaNew # update betas
+  }
+  return(beta)
+}
+```
+
+## Testing, testing...
+
+```{r}
+set.seed(04042017)
+n = 100
+p = 2
+b = seq(10,1,length=p)
+b0 = -2
+x = matrix(rnorm(n*p), nrow=n)
+y.lm = b0 + x %*% b + rnorm(n)
+c(b0,b)
+coef(lm(y.lm~x))
+irwls(y.lm,cbind(1,x))
+```
+
+## Testing, testing, testing...
+
+```{r, eval=FALSE}
+ilogit <- function(z) exp(z)/(1+exp(z))
+y.logit = rbinom(n, 1, prob = ilogit(b0 + x %*% b))
+c(b0,b)
+coef(glm(y.logit~x))
+irwls(y.logit, cbind(1,x), invlink=ilogit, linkPrime=function(m) 1/(m*(1-m)), V=function(m) m*(1-m))
+```
+
+
+## Ordinal logistic regression
+
+```{r}
+load('ologit.Rdata')
+lapply(dat[, c("apply", "pared", "public")], table)
+ftable(xtabs(~ public + apply + pared, data = dat)) # what does this information tell you?
+c(summary(dat$gpa), sd=sd(dat$gpa))
+```
+
+
+
+## Plotting
+
+```{r, fig.width=12, fig.height=8}
+library(ggplot2) # might need to install this package
+ggplot(dat, aes(x = apply, y = gpa)) +
+  geom_boxplot(size = .75) +
+  geom_jitter(alpha = .5) +
+  facet_grid(pared ~ public, margins = TRUE) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+```
+
+## Do the estimation
+
+```{r}
+library(MASS) # this one is already installed
+m <- polr(apply ~ pared + public + gpa, data = dat, Hess=TRUE)
+summary(m)
+```
+
+* There are estimates for two intercepts, which are sometimes called cutpoints. 
+ 
+* The intercepts indicate where the latent variable is cut to make the three groups that we observe in our data. Note that this latent variable is continuous.
+
+* note that there are no p-values in the summary output 
+
+* what R code would you use to calculate them?
+
+```{r}
+t.values = summary(m)$coef[1:3,3]
+signif(2*pt(abs(t.values), df.residual(m), lower.tail = FALSE),3)
+```
+
+## Confidence intervals
+
+```{r}
+confint(m) # this does "profiled" confidence intervals using numerical information from polr
+confint.default(m) # this assumes normality, are they very different? (the first is preferred)
+```
+
+* Interpret the coefficient for 'pared' in context (this is a logistic regression, it uses log odds)
+
+## Odds ratios
+
+```{r}
+exp(coef(m))
+exp(cbind(odds.ratio=coef(m), confint(m))) # how would you interpret these?
+```
+
+* Called __proportional odds ratios__
+
+* We would say that for a one unit increase in parental education, i.e., going from 0 (Low) to 1 (High), the odds of "very likely" applying versus "somewhat likely" or "unlikely" applying combined are 2.85 greater, given that all of the other variables in the model are held constant.
+
+* When a student's gpa moves 1 unit, the odds of moving from "unlikely" applying to "somewhat likely" or "very likley" applying (or from the lower and middle categories to the high category) are multiplied by 1.85.
+
+## Assumptions
+
+* The relationship between each pair of outcome groups is the same 
+
+* I.e., the coefficients that describe the relationship between, say, the lowest versus all higher categories of the response variable are the same as those that describe the relationship between the next lowest category and all higher categories, etc. 
+
+* Called the "proportional odds assumption" or the "parallel regression assumption." 
+
+* Because the relationship between all pairs of groups is the same, there is only one set of coefficients. 
+
+* If this were not the case, we would need different sets of coefficients in the model to describe the relationship between each pair of outcome groups. 
+
+* To asses the appropriateness of our model, we need to evaluate whether the proportional odds assumption is tenable. 
+
+## Use methods from before
+
+```{r}
+require(nnet)
+full = multinom(apply~pared+public+gpa, data=dat, trace=FALSE) # This fits the unconstrained model (not ordinal)
+# The problem is that it doesn't play well with other things (like anova)
+# It also likes to print out garbage (trace=FALSE makes it go away)
+simulate.from.ologit <- function(df, mdl) { 
+  probs <- predict(mdl, type="prob") # changed from ch 10 code
+  newy <- factor(apply(probs, 1, function(x) sample(colnames(probs), 1, prob=x)))
+  df[[names(mdl$model)[1]]] <- newy 
+  return(df)
+}
+
+# Simulate from an estimated ordinal logistic model, and refit both the ordered logistic
+  # regression and a multinomial logit
+# Inputs: data frame with covariates (df), fitted ologistic model (logr)
+# Output: difference in deviances
+delta.deviance.sim <- function (df, logr) {
+  sim.df <- simulate.from.ologit(df, logr)
+  form = formula(logr)[1:3] # not sure if 1:3 will always work??
+  ologit.dev <- polr(form, data=sim.df)$deviance
+  multi.dev <- multinom(form, data=sim.df,trace=FALSE)$deviance
+  return(ologit.dev - multi.dev)
+}
+```
+
+## Results
+
+```{r, fig.height=6,fig.width=10}
+(delta.observed = m$deviance - full$deviance)
+delta.dev.dist = replicate(100, delta.deviance.sim(dat, m))
+mean(delta.observed <= delta.dev.dist) # % of sims that fit better than what we saw
+plot(density(delta.dev.dist), las=1, bty='n')
+abline(v=delta.observed, col=2)
+```
+
+## Poisson regression
+
+<img src=pm.png width=1200 height=800>
+
+## The study
+
+```{r, echo=FALSE}
+soda = read.csv('sodas.csv')
+```
+
+* Examining how many sugary drinks were sold in hospital cafeterias
+
+* Looked at `r nlevels(soda$Site)` different hospitals
+
+* Some sites had different cafeterias in them
+
+* Recorded number of sugary beverages and number of total customers daily
+
+* Each hospital had an intervention partway through:
+
+    1. Posters saying that there were 200 calories in that yucky drink.
+    2. Posters saying that it would take 1 hour of exercise to work off 
+    3. A 10% discount on zero calorie beverages
+    4. Some combinations
+    
+## Data processing
+
+```{r}
+soda$DofW = factor(soda$DofW, labels = c('Mon','Tue','Wed','Thur','Fri','Sat','Sun'))
+soda$cont = soda$Intervention
+levels(soda$cont)[6:7] = 'control'
+soda$cont = relevel(soda$cont, ref='control') # makes 'control' the baseline
+soda = subset(soda, soda$DofW %in% c('Mon','Tue','Wed','Thur','Fri')) # remove weekends
+```
+
+    
+## The model
+
+* Want to know whether the interventions changed purchases of (a) __sugary drinks__ and/or (b) __zero calorie drinks__.
+
+* Control for day of the week effects
+
+* Estimate for each hospital separately
+
+* Use log of total customers as an 'offset': means that the coefficient is known to be 1
+
+* Basic idea is that we are modelling $\log(bev/total) = \log(bev)-\log(total)$
+
+* Use Poisson regression: good for count or percentage data
+
+## As a glm
+
+* The poisson distribution
+
+\[
+p(y\given \lambda) = \frac{\lambda^y \exp(-\lambda)}{y!}I(y\in \mathbb{Z}^+)
+\]
+
+* $\Expect{Y} = \lambda$
+
+* Take $\mu(x) = \Expect{Y\given X=x} = \lambda$
+
+* So redefine $\lambda = \lambda(x) =  x^\top \beta$
+
+\[
+p(y\given X=x) = \frac{\lambda(x)^y \exp(-\lambda(x))}{y!}I(y\in \mathbb{Z}^+) = \frac{(x^\top \beta)^y \exp(-x^\top \beta)}{y!}I(y\in \mathbb{Z}^+)
+\]
+
+* The right choice of $g$ turns out to be $\log$
+
+* The variance of Poisson is also $\lambda$
+
+* Therefore, when we run the glm, we always use "overdispersion". This lets the variance scale differently from the mean (in OLS, the mean was $x^\top\beta$ and the variance was $\sigma^2$)
+
+## Estimating the thing
+
+* Do it separately for each site
+
+```{r}
+require(plyr)
+sugary = dlply(soda, .(Site), glm, formula=Regular~DofW+cont+offset(log(CosTot)), family='quasipoisson')
+zerocal = dlply(soda, .(Site), glm, formula=ZeroCal~DofW+cont+offset(log(CosTot)), family='quasipoisson')
+signif(cbind(sapply(sugary,coef),sapply(zerocal,coef)),3)
+```
+
+## Transformed back (as percentage changes)
+
+```{r}
+signif((exp(cbind(sapply(sugary,coef),sapply(zerocal,coef)))-1)*100,3)
+```
+
+## Numbers are bad, make plots
+
+```{r,fig.height=8,fig.width=12}
+library(reshape2)
+df = rbind.fill(melt(((exp(sapply(sugary,coef)))-1)*100),melt(((exp(sapply(zerocal,coef)))-1)*100))
+names(df) = c('pred','site','coef')
+df$yvar = rep(c('sugary','zerocal'),each=nrow(df)/2)
+ncoef = length(coef(sugary[[1]]))
+df$low = c(((exp(sapply(sugary,confint))-1)*100)[1:ncoef,],
+           ((exp(sapply(zerocal,confint))-1)*100)[1:ncoef,])
+df$high = c(((exp(sapply(sugary,confint))-1)*100)[(ncoef+1):(2*ncoef),],
+            ((exp(sapply(zerocal,confint))-1)*100)[(ncoef+1):(2*ncoef),])
+df = subset(df, grepl('cont',df$pred))
+levels(df$pred) = substring(levels(df$pred), 5)
+ggplot(data=df, aes(color=yvar,y=coef,x=pred))+geom_errorbar(aes(ymax=high,ymin=low))+
+  geom_point(size=2)+facet_wrap(~site)+xlab('treatment')+ylab('% increase in sales')+
+  theme(legend.position='bottom',legend.title=element_blank())
+```
