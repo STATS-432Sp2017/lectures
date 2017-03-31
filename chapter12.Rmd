@@ -3,8 +3,8 @@ title: "Chapter 12"
 author: "DJM"
 date: "4 April 2016"
 output:
-  slidy_presentation: default
   pdf_document: default
+  slidy_presentation: default
 ---
 
 \newcommand{\Expect}[1]{\mathbb{E}\left[ #1 \right]}
@@ -12,7 +12,7 @@ output:
 \newcommand{\Cov}[2]{\mathrm{Cov}\left[#1,\ #2\right]}
 \newcommand{\given}{\ \vert\ }
 \newcommand{\E}{\mathbb{E}}
-\newcommand{\P}{\mathbb{P}}
+\renewcommand{\P}{\mathbb{P}}
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\tr}[1]{\mbox{tr}(#1)}
 
