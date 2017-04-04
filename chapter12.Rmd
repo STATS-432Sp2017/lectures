@@ -4,6 +4,7 @@ author: "DJM"
 date: "4 April 2016"
 output:
   pdf_document: default
+  beamer_presentation: default
   slidy_presentation: default
 ---
 
@@ -70,7 +71,7 @@ g(Y) \approx g(\mu(x)) + (Y-\mu(x))g'(\mu(x))
 ## Let's generalize
 
 \[
-g(Y) \approx g(\mu(x)) + (Y-\mu(x))g'(\mu(x))
+g(Y) \approx g(\mu(x)) + (Y-\mu(x))g'(\mu(x)) =:Z
 \]
 
 * Let $g$ be any function and define
@@ -108,41 +109,43 @@ g(Y) \approx g(\mu(x)) + (Y-\mu(x))g'(\mu(x))
 
 * Instead we look at the Taylor expansion because it doesn't depend on $g(Y)$
 
-
-
-## Example: logistic regression
-
-\[
-\begin{aligned}
-\mu(x) &= P(Y=1\given X=x)\\
-g(m) &= \log\frac{m}{1-m}\\
-g(\mu(x)) &= \log\frac{P(Y=1\given X=x)}{1-P(Y=1\given X=x)}\\
-\Var{Y\given X=x} &= \mu(x)(1-\mu(x))\\
-(g'(x))^2 &= \left(\frac{d}{dx}\log\frac{x}{1-x}\right)^2 = \left(\frac{1}{x(1-x)}\right)^2
-\end{aligned}
-\]
-
 ## Example: OLS
 
 \[
 \begin{aligned}
 \mu(x) &= \Expect{Y\given X=x}\\
 g(m) &= m\\
+g^{-1}(m) &= m\\
 g(\mu(x)) &= \Expect{Y\given X=x}\\
 \Var{Y\given X=x} &= \sigma^2\\
 (g'(x))^2 &= 1
 \end{aligned}
 \]
 
+
+## Example: logistic regression
+
+\[
+\begin{aligned}
+\mu(x) &= \Expect{Y \given X=x}=P(Y=1\given X=x)\\
+g(m) &= \log\frac{m}{1-m}\\
+g^{-1}(m) &= \frac{\exp(m)}{1+\exp(m)}\\
+g(\mu(x)) &= \log\frac{P(Y=1\given X=x)}{1-P(Y=1\given X=x)}\\
+\Var{Y\given X=x} &= \mu(x)(1-\mu(x))\\
+(g'(x))^2 &= \left(\frac{d}{dx}\log\frac{x}{1-x}\right)^2 = \left(\frac{1}{x(1-x)}\right)^2
+\end{aligned}
+\]
+
+
 ## Estimation
 
-1. Get some data $(y_1,x_1),\ldots,(y_n,x_n)$, figure out the __link function__ $g$, and calculate $g'$ and $\Var{Y\given X=x}$. Now give some initial guesses for $\beta$ (say $\beta=\mathbf{0}$)
+1. Get some data $(y_1,x_1),\ldots,(y_n,x_n)$, figure out the __link function__ $g$, and calculate $g^{-1}$, $g'$ and $\Var{Y\given X=x}$. Now give some initial guesses for $\beta$ (say $\beta=\mathbf{0}$)
 
 2. Iterate until convergence:
     
-    a. Calculate $\eta(x_i) = \beta^\top x_i$ and $\hat{\mu}(x_i) = g(\eta(x_i))$.
+    a. Calculate $\eta(x_i) = \beta^\top x_i$ and $\hat{\mu}(x_i) = g^{-1}(\eta(x_i))$.
     b. Find $z_i = \eta(x_i)+ (y_i - \hat{\mu}(x_i)) g'(\hat{\mu}(x_i))$.
-    c. Calculate the weights $w_i = [(g'(\hat{\mu}(x_i)))^2 \Var(\hat{\mu}(x_i))$.
+    c. Calculate the weights $w_i = [(g'(\hat{\mu}(x_i)))^2 \Var{\hat{\mu}(x_i)}$.
     d. Do weighted least squares of $z_i$ on $x_i$ with weights $w_i$. This gives a new $\beta$.
     
 ## R code
@@ -200,6 +203,8 @@ y.logit = rbinom(n, 1, prob = ilogit(b0 + x %*% b))
                     linkPrime=function(m) 1/(m*(1-m)), V=function(m) m*(1-m)))
 ```
 
+## Visualizing
+
 ```{r logistic-plots}
 plot.logistic <- function(x, y, coeff, n.grid=50, labcex=1, col="purple", ...) {
   grid.seq <- seq(from=-1,to=1,length.out=n.grid)
@@ -215,6 +220,17 @@ plot.logistic(x,y.logit,glm.logit,main='GLM coefs')
 plot.logistic(x,y.logit,our.logit,main='Our coefs',col='darkgreen')
 ```
 
+## O-logit
+
+* A study looks at factors that influence the decision of whether to apply to graduate school. 
+
+* College juniors are asked if they are unlikely, somewhat likely, or very likely to apply to graduate school. Hence, our outcome variable has three categories. 
+
+* Data on parental educational status, whether the undergraduate institution is public or private, and current GPA is also collected. 
+
+* The researchers have reason to believe that the "distances" between these three points are not equal. 
+
+* For example, the "distance" between "unlikely" and "somewhat likely" may be shorter than the distance between "somewhat likely" and "very likely".
 
 ## Ordinal logistic regression
 
@@ -230,7 +246,7 @@ c(summary(dat$gpa), sd=sd(dat$gpa))
 ## Plotting
 
 ```{r, fig.width=12, fig.height=8}
-library(ggplot2) # might need to install this package
+library(ggplot2)
 ggplot(dat, aes(x = apply, y = gpa)) +
   geom_boxplot(size = .75) +
   geom_jitter(alpha = .5) +
@@ -299,7 +315,8 @@ exp(cbind(odds.ratio=coef(m), confint(m))) # how would you interpret these?
 
 ```{r}
 require(nnet)
-full = multinom(apply~pared+public+gpa, data=dat, trace=FALSE) # This fits the unconstrained model (not ordinal)
+full = multinom(apply~pared+public+gpa, 
+                data=dat, trace=FALSE) # This fits the unconstrained model (not ordinal)
 # The problem is that it doesn't play well with other things (like anova)
 # It also likes to print out garbage (trace=FALSE makes it go away)
 simulate.from.ologit <- function(df, mdl) { 
@@ -334,7 +351,12 @@ abline(v=delta.observed, col=2)
 
 ## Poisson regression
 
-<img src=pm.png width=1200 height=800>
+```{r fig.width=10, fig.height=8,echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("pm.png")
+ grid.raster(img)
+```
 
 ## The study
 
@@ -412,8 +434,10 @@ p(y\given X=x) = \frac{\lambda(x)^y \exp(-\lambda(x))}{y!}I(y\in \mathbb{Z}^+) =
 
 ```{r}
 require(plyr)
-sugary = dlply(soda, .(Site), glm, formula=Regular~DofW+cont+offset(log(CosTot)), family='quasipoisson')
-zerocal = dlply(soda, .(Site), glm, formula=ZeroCal~DofW+cont+offset(log(CosTot)), family='quasipoisson')
+sugary = dlply(soda, .(Site), glm, formula=Regular~DofW+cont+offset(log(CosTot)),
+               family='quasipoisson')
+zerocal = dlply(soda, .(Site), glm, formula=ZeroCal~DofW+cont+offset(log(CosTot)),
+                family='quasipoisson')
 signif(cbind(sapply(sugary,coef),sapply(zerocal,coef)),3)
 ```
 
@@ -427,7 +451,8 @@ signif((exp(cbind(sapply(sugary,coef),sapply(zerocal,coef)))-1)*100,3)
 
 ```{r,fig.height=8,fig.width=12}
 library(reshape2)
-df = rbind.fill(melt(((exp(sapply(sugary,coef)))-1)*100),melt(((exp(sapply(zerocal,coef)))-1)*100))
+df = rbind.fill(melt(((exp(sapply(sugary,coef)))-1)*100),
+                melt(((exp(sapply(zerocal,coef)))-1)*100))
 names(df) = c('pred','site','coef')
 df$yvar = rep(c('sugary','zerocal'),each=nrow(df)/2)
 ncoef = length(coef(sugary[[1]]))
