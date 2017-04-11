@@ -12,7 +12,7 @@ output:
 
 
 
-## Generalized linear models
+## Making better graphics
 
 
 ```{r setup, message=FALSE, echo=FALSE}
