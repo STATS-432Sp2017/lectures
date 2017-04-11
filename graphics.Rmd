@@ -5,7 +5,6 @@ date: "11 April 2017"
 output:
   slidy_presentation: default
   pdf_document: default
-  beamer_presentation: default
 ---
 
 
@@ -405,6 +404,13 @@ ggplot(data = diamonds) +
 ggplot(data = diamonds) + 
   geom_bar(mapping = aes(x = cut, fill = clarity), position = "dodge")
 ```
+
+## Bar charts with mean
+
+```{r}
+ggplot(diamonds)+geom_bar(aes(x=cut,y=price),stat="summary",fun.y="mean")
+```
+
 
 ## Jitter
 
