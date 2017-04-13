@@ -411,6 +411,12 @@ ggplot(data = diamonds) +
 ggplot(diamonds)+geom_bar(aes(x=cut,y=price),stat="summary",fun.y="mean")
 ```
 
+## Or
+
+```{r}
+ggplot(diamonds,aes(x=cut)) + 
+  stat_summary_bin(aes(y = price), fun.y = "mean", geom = "bar")
+```
 
 
 ## Jitter
@@ -549,7 +555,9 @@ ggplot(db1, mapping=aes(x=weekday, y=Mechanical.Load)) +
 I googled `R reorder factor levels`
 
 ```{r}
-db1$weekday = factor(db1$weekday, c('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'))
+db1$weekday = factor(db1$weekday, 
+                     c('Monday','Tuesday','Wednesday','Thursday',
+                       'Friday','Saturday','Sunday'))
 ggplot(db1, mapping=aes(x=weekday, y=Mechanical.Load)) +
   geom_boxplot(aes(fill=BeforeIowa))
 ```
@@ -577,7 +585,8 @@ ggplot(db1, mapping=aes(x=weekday, y=Mechanical.Load)) + geom_boxplot(aes(fill=B
 What if I made `weekday` the colors and `BeforeIowa` on the `x`-axis?
 
 ```{r}
-ggplot(db1, mapping=aes(x=BeforeIowa, y=Mechanical.Load)) + geom_boxplot(aes(fill=weekday)) +
+ggplot(db1, mapping=aes(x=BeforeIowa, y=Mechanical.Load)) + 
+  geom_boxplot(aes(fill=weekday)) +
   scale_fill_brewer(palette='Set1')
 ```
 
@@ -585,7 +594,8 @@ ggplot(db1, mapping=aes(x=BeforeIowa, y=Mechanical.Load)) + geom_boxplot(aes(fil
 
 ```{r}
 db1$BeforeIowa = factor(db1$BeforeIowa, labels=c('After Iowa','Before Iowa'))
-ggplot(db1, mapping=aes(x=weekday, y=Mechanical.Load)) + geom_boxplot(aes(fill=BeforeIowa)) +
+ggplot(db1, mapping=aes(x=weekday, y=Mechanical.Load)) + 
+  geom_boxplot(aes(fill=BeforeIowa)) +
   scale_fill_brewer(palette='Set1') + 
   labs(y='Mechanical Load', x=element_blank(), fill=element_blank()) + 
   theme(legend.position='top')
@@ -614,4 +624,73 @@ ggplot(workout, mapping=aes(x=weekday, y=Mechanical.Load)) + geom_boxplot(aes(fi
   scale_fill_brewer(palette='Set1') + 
   labs(y='Mechanical Load', x=element_blank(), fill=element_blank()) + 
   theme(legend.position='top') + facet_wrap(~Subject.Name, nrow=2)
+```
+
+## Some things I used
+
+```{r, include=FALSE}
+load('~/Dropbox/WorkDB/preconditionedLeastSquares/PLS/analysisWithPackageV2/CareRegResultsAllNewest.Rdata')
+library(RColorBrewer)
+library(modelr)
+library(reshape2)
+library(plyr)
+nlam = ncol(SimCompressedLambdas)
+SimParamsSmall = subset(SimParams, select=names(SimParams)[c(2,3,8,9,12,13,16,17)])
+SimParamsLong = SimParamsSmall[rep(1:nrow(SimParamsSmall), each=nlam),]
+our.colors = brewer.pal(6,"Set1")
+cross.bar.color = "white"
+sim.data.frame = data.frame(SimParamsLong, lam=c(t(SimCompressedLambdas)),
+                            df = c(t(SimCompressedDF)),
+                            EstErr = c(t(SimCompressedEstErr)),
+                            GCV = c(t(SimCompressedGCV)),
+                            TestErr = c(t(SimCompressedTestErr)))
+levels(sim.data.frame$compression) = c('convex','linear','FC','PC')
+labs=expand.grid(list(bmethod=unique(sim.data.frame$bmethod), p=unique(sim.data.frame$p),
+                      rho=unique(sim.data.frame$rho)))
+for (i in 1:ncol(labs)) if (class (labs[,i]) == "factor") labs[,i] <- as.character(labs[,i])
+lambda.cut.min = 0
+lambda.cut.max = 10000
+nlams = 30
+i=1
+nn = paste0(names(labs),labs[i,],collapse='')
+  ts = subset(sim.data.frame, bmethod==labs[i,1] & p==labs[i,2] & rho==labs[i,3] & lam > lambda.cut.min & lam < lambda.cut.max)
+  unlam = unique(ts$lam)
+  ts = subset(ts, lam %in% unlam[seq(1,length(unlam),length.out = nlams)])
+  tts = subset(SimBaselineRes, bmethod==labs[i,1] & p==labs[i,2] & rho==labs[i,3],
+               select = c(prob, bmethod, p, rho, algo, testError, estError))
+  levels(tts$algo) = c('ols','ridge','Bayes')
+  tts$algo = droplevels(tts$algo)
+  names(tts)[5:7] = c('compression','TestErr','EstErr')
+  tts$lam = NA
+  ntts = nrow(tts)
+  tts = tts[rep(1:ntts, times=length(unique(ts$q))),]
+  tts$q = rep(unique(ts$q), each=ntts)
+  ss = rbind.fill(ts, tts)
+  ss$lam = as.factor(round(log(ss$lam),2))
+  levels(ss$lam) = c(levels(ss$lam), ' ')
+  ss$lam[is.na(ss$lam)] = ' '
+  lamticks = rep('', length(levels(ss$lam)))
+  mk = 1:length(levels(ss$lam)) %% floor(length(levels(ss$lam))/9) # about 9 labels
+  mkmid = floor(max(mk)/2)
+  lamticks[mk==mkmid] = levels(ss$lam)[mk==mkmid]
+```
+
+```{r}
+the_plot <- ggplot(ss, mapping = aes(x=lam,y=log10(EstErr))) +
+    geom_boxplot(outlier.colour = NA, aes(color=compression, fill=compression),
+                 notch=FALSE) +
+    facet_wrap(~q,nrow=3,labeller = label_both) + theme_minimal() +
+    labs(x=bquote(log(lambda)), y=bquote(log[10](estimation~risk))) +
+    scale_x_discrete(breaks = levels(ss$lam), labels = lamticks) +
+    geom_ref_line(v = length(levels(ss$lam))-.5, colour = 'grey') +
+    scale_fill_manual(values=our.colors) +
+    scale_color_manual(values=our.colors) +
+    theme(text=element_text(family='serif',size=12), legend.title=element_blank(),
+          legend.position='bottom', 
+          strip.background=element_rect(fill='grey', color='grey')) +
+    guides(fill=guide_legend(nrow=1,byrow=TRUE))
+  cross_dat = ggplot_build(the_plot)$data[[1]]
+  cross_dat$q = unique(ss$q)[cross_dat$PANEL]
+  the_plot + geom_segment(data=cross_dat, aes(x=xmin,xend=xmax,y=middle,yend=middle),
+                          colour = cross.bar.color, size=.5)
 ```
